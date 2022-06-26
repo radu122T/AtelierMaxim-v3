@@ -101,12 +101,7 @@ ul {
 a:visited {
     color:inherit;
 }
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-   -webkit-appearance: none;
-   -moz-appearance: none;
-   appearance: none; 
-}
+
 
 .noDisplay {
     display: none;
@@ -497,14 +492,16 @@ nav .container ul {
     
 }
 .cartDrawer .buttons input {
-    width:25px;
-    height:24px;
+    width:50px;
+    height:30px;
     border:none;
     border:solid 1px black;
     text-align: center;
     font-size:0.98rem;
 }
-
+input[type=number]::-webkit-inner-spin-button {
+    opacity: 1;
+  }
 .cartDrawer .buttons {
     display:flex;
 }
@@ -551,17 +548,22 @@ nav .container ul {
 }
 
 .buttonCartDrawer {
-    width:50%;
-    margin:0 auto;
     background-color:rgb(255, 106, 61);
     height:50px;
     font-size:1.3rem;
     color:white;
     font-weight: 600;
     margin-top:20px;
+    padding:0 40px;;
     border-radius:8px;
     border-color:white;
     cursor:pointer;
+}
+
+.buttonDrawerContainer{
+    display:flex;
+    justify-content: center;
+    align-items: center;
 }
 .buttonCartDrawer:hover {
     background-color:rgb(235, 96, 54); ;

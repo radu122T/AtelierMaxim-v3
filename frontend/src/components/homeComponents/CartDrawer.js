@@ -50,7 +50,11 @@ const CartDrawer = ({cart}) => {
                 <span>Pret transport: 20 lei</span>
                 <span>Pret total: {totalPrice+20} lei</span>
             </section>
-            <button className="buttonCartDrawer">Vezi cosul</button>
+            <div className="buttonDrawerContainer">
+                <Link to="/cart">
+                    <button className="buttonCartDrawer">Vezi cosul</button>
+                </Link>
+            </div>
 		</div>
     )
 }

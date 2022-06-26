@@ -2,7 +2,7 @@ import { BrowserRouter as Router,
     Route,
     Routes,
     Navigate} from 'react-router-dom'
-import React from "react"
+import React, { useEffect } from "react"
 import "./reset.css"
 import "./App.css"
 import HomeScreen from "./screens/HomeScreen"
@@ -28,7 +28,8 @@ const App = ({currentItem}) => {
 
     const mapStateToProps = state => {
         return {
-            currentItem: state.shop.currentItem
+            currentItem: state.shop.currentItem,
+            
         }
     }
 export default connect(mapStateToProps)(App);

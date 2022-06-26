@@ -9,7 +9,7 @@ import CartDrawer from "./../components/homeComponents/CartDrawer"
 
 
 const HomeScreen = () => {
-    window.scrollTo(0, 0)
+    
     return (
         <div className="container-root">
             <Nav />

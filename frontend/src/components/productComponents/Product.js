@@ -1,15 +1,14 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { connect } from "react-redux"
 import { addToCart, loadCurrentItem } from "../../redux/Shopping/shopping-actions"
 
 
 const Product = ({productData ,addToCart, loatCurrentItem})=> {
-
+    
     let drawer = ()=> {addToCart(productData.id)
         cartDrawer.style.display="flex"
         }
-    
     return (
         <div className={`item ${productData.display} ${productData.tip}`}>
             <div>

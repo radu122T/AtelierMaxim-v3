@@ -1,14 +1,16 @@
-import React, {useState} from "react"
+import React, {useState,useEffect} from "react"
 import {connect} from 'react-redux'
 import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
-const CartItem = ({item, removeFromCart, adjustQty}) => {
+const CartItem = ({item, removeFromCart, adjustQty,cart}) => {
+    let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
+    useEffect(()=>setInput(it.qty),[it.qty])
     const onChangeHandler = (e) => {
-        setInput(e.target.value)
-        adjustQty(item.id, e.target.value)
-    }
+        setInput(it.qty)
+        adjustQty(item.id, e.target.value)}
+    
     return (
-        <div className="cart-item">
+        <div className="cart-item" id = {item.id}>
             <div className="cartProduct">
                 <div className="cartProductImg">
                     <img src={item.img} alt="" />
@@ -23,13 +25,9 @@ const CartItem = ({item, removeFromCart, adjustQty}) => {
             </div>
 
             <div className="buttons">
-                <div className="minus">
-                    <i className="fa-solid fa-minus"></i>
-                </div>
-                
                 <div className="quantityCartDrawer">
                 <label htmlFor="qty"></label>
-                    <input
+                    <input className="drawerInput"
                         min="1"
                         type="number"
                         id="qty"
@@ -38,13 +36,9 @@ const CartItem = ({item, removeFromCart, adjustQty}) => {
                         onChange={onChangeHandler}
                     />
                 </div>
-
-                <div className="plus">
-                <i  className="fa-solid fa-plus"></i>
-                </div>
             </div>
 
-            <i onClick= {() =>removeFromCart(item.id)} className="xInDrawer fa-solid fa-xmark"></i>
+            <i onClick= {() => removeFromCart(item.id)} className="xInDrawer fa-solid fa-xmark"></i>
         </div>
     )
 }
@@ -52,8 +46,14 @@ const CartItem = ({item, removeFromCart, adjustQty}) => {
 const mapDispatchToProps = dispatch => {
     return {
         removeFromCart: (id) => dispatch(removeFromCart(id)) ,
-        adjustQty: (id, value) => dispatch(adjustQty(id,value)) 
+        adjustQty: (id, value) => dispatch(adjustQty(id,value)),
+        addToCart: (id) => dispatch(addToCart(id)),
     }
 }
-
-export default connect(null, mapDispatchToProps)(CartItem)
+const mapStateToProps = state => {
+    return {
+        cart: state.shop.cart,
+        
+    }
+}
+export default connect(mapStateToProps, mapDispatchToProps)(CartItem)

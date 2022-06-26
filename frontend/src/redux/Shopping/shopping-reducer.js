@@ -1,13 +1,20 @@
 import * as actionTypes from "./shopping-types";
 import shopItemsData from "../../data/dataProduct"
+
+
+
+
+
+
 const INITIAL_STATE = {
     products: shopItemsData,
-    cart: [],
+    cart:[],
     currentItem: null,
 };
 
 const shopReducer = (state = INITIAL_STATE, action) => {
     switch (action.type) {
+
     case actionTypes.ADD_TO_CART:
         const item = state.products.find((prod) => prod.id === action.payload.id);
         const inCart = state.cart.find((item) =>
@@ -23,6 +30,7 @@ const shopReducer = (state = INITIAL_STATE, action) => {
             )
             : [...state.cart, { ...item, qty: 1 }],
         };
+
     case actionTypes.REMOVE_FROM_CART:
         return {
         ...state,
