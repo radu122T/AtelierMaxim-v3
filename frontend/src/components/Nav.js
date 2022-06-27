@@ -1,7 +1,7 @@
 import React, {useState,useEffect} from "react"
 import { Link } from "react-router-dom"
 import {connect} from "react-redux"
-
+import LogoImg from "../../public/images/logoAlb.svg"
 const Nav = ({ cart }) => {
 
 	const [cartCount, setCartCount]= useState(0)
@@ -29,7 +29,7 @@ const Nav = ({ cart }) => {
 
 					<li className="contLogo">
 						<Link to="/"> 
-						<div className="logo"><img src="images/logo alb Atelierul Maxim.svg" alt=""/></div>
+						<div className="logo"><img src={LogoImg} alt=""/></div>
 						</Link>
 					</li>
 

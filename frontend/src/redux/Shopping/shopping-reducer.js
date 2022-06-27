@@ -2,10 +2,6 @@ import * as actionTypes from "./shopping-types";
 import shopItemsData from "../../data/dataProduct"
 
 
-
-
-
-
 const INITIAL_STATE = {
     products: shopItemsData,
     cart:[],

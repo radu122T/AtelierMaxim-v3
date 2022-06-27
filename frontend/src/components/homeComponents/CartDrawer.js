@@ -31,30 +31,30 @@ const CartDrawer = ({cart}) => {
             </div>
             
             <section className="titleCartDrawer">
-                <h2>Cosul dumneavoastra</h2>
+                <h2>{cart.length>0 ? "Cosul dumneavoastra" : "Cosul dumneavoastra este gol"}</h2>
             </section>
 
-            <section className="toperDrawer">
+            {cart.length>0 && <section className="toperDrawer">
                     <span>Produs</span>
                     <span>Pret</span>
                     <span className="qtyTitle">Cantitate</span>
-			</section>
-            <main>
+			</section>}
+            {cart.length>0 && <main>
                 <div className="shopping-cart" id="shopping-cart">
                 {cart.map((item) => (
                     <CartItem key={item.key}  item={item} />
                 ))}
                 </div>
-            </main>
+            </main>}
             <section className="totalDrawer">
-                <span>Pret transport: 20 lei</span>
-                <span>Pret total: {totalPrice+20} lei</span>
+                {cart.length>0 && <span>Pret transport: 20 lei</span>}
+                {cart.length>0 && <span>Pret total: {totalPrice+20} lei</span>}
             </section>
-            <div className="buttonDrawerContainer">
+             {cart.length>0 && <div className="buttonDrawerContainer">
                 <Link to="/cart">
                     <button className="buttonCartDrawer">Vezi cosul</button>
                 </Link>
-            </div>
+            </div>}
 		</div>
     )
 }

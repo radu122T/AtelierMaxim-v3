@@ -1,19 +1,19 @@
-import React, { useEffect } from "react"
+import React from "react"
 import { Link } from "react-router-dom"
 import { connect } from "react-redux"
 import { addToCart, loadCurrentItem } from "../../redux/Shopping/shopping-actions"
 
 
-const Product = ({productData ,addToCart, loatCurrentItem})=> {
+const Product = ({productData ,addToCart, loadCurrentItem})=> {
     
-    let drawer = ()=> {addToCart(productData.id)
+    const drawer = ()=> {addToCart(productData.id)
         cartDrawer.style.display="flex"
         }
     return (
         <div className={`item ${productData.display} ${productData.tip}`}>
             <div>
                 <Link to={`/product/${productData.id}`}>
-                    <img onClick={()=> loatCurrentItem(productData)} src={productData.img} alt="produs"/>
+                    <img onClick={()=> loadCurrentItem(productData)} src={productData.img} alt="produs"/>
                 </Link>
                 <div className="details">
                     <p>{productData.desc}</p>
@@ -27,7 +27,7 @@ const Product = ({productData ,addToCart, loatCurrentItem})=> {
                 <div className="productButtons">
                     <button onClick={()=>drawer()} className='addToCart' id='addToCart'>Adauga in cos</button>
                     <Link to={`/product/${productData.id}`}>
-                        <button onClick={()=> loatCurrentItem(productData)}><>Personalizeaza</></button>
+                        <button onClick={()=> loadCurrentItem(productData)}><>Personalizeaza</></button>
                     </Link>
                 </div>
             </div>
@@ -38,7 +38,7 @@ const Product = ({productData ,addToCart, loatCurrentItem})=> {
 const mapDispatchToProps = dispatch => {
     return {
         addToCart: (id) => dispatch(addToCart(id)),
-        loatCurrentItem: (item) => dispatch(loadCurrentItem(item))
+        loadCurrentItem: (item) => dispatch(loadCurrentItem(item))
     }
 }
 

@@ -1,14 +1,18 @@
 import React, {useState,useEffect} from "react"
 import {connect} from 'react-redux'
 import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
-const CartItem = ({item, removeFromCart, adjustQty,cart}) => {
+
+const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
+
     let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
-    useEffect(()=>setInput(it.qty),[it.qty])
+    
     const onChangeHandler = (e) => {
         setInput(it.qty)
         adjustQty(item.id, e.target.value)}
     
+    useEffect(()=>setInput(it.qty),[it.qty])
+
     return (
         <div className="cart-item" id = {item.id}>
             <div className="cartProduct">
