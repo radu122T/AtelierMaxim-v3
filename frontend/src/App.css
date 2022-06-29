@@ -395,7 +395,7 @@ nav .container ul {
     display:none;
     position:fixed;
     height:100vh;
-    width:450px;
+    width:300px;
     top:0;
     right:0;
     background-color: white;
@@ -403,7 +403,25 @@ nav .container ul {
     overflow: scroll;
     overflow-x: hidden;
     flex-direction: column;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
+.drawerContainer {
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 2;
+    cursor: pointer;
+}
+
 .cartDrawer::-webkit-scrollbar {
     width:0.5rem;
 }

@@ -65,6 +65,24 @@ const shopReducer = (state = INITIAL_STATE, action) => {
             : item
         ),
         }
+        case actionTypes.ADD_GRAVURA_1:
+            return {
+                ...state,
+                cart: state.cart.map((item) =>
+                    item.id === action.payload.id
+                    ? { ...item, gravura1: `${action.payload.gravura1}` }
+                    : item
+                ),
+                }
+        case actionTypes.ADD_GRAVURA_2:
+            return {
+                ...state,
+                cart: state.cart.map((item) =>
+                    item.id === action.payload.id
+                    ? { ...item, gravura2: `${action.payload.gravura2}` }
+                    : item
+                ),
+                }
     default:
         return state;}
 };

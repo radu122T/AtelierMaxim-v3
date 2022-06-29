@@ -56,3 +56,24 @@ export const addSuport = (itemID,support) => {
             }
         }    
     
+
+export const addGravura1 = (itemID,gravura1) => {
+    return {
+            type: actionTypes.ADD_GRAVURA_1,
+            payload: {
+                id: itemID,
+                gravura1:gravura1,
+                }
+            }
+            }    
+            
+export const addGravura2 = (itemID,gravura2) => {
+    return {
+            type: actionTypes.ADD_GRAVURA_2,
+            payload: {
+                id: itemID,
+                gravura2:gravura2,
+                }
+            }
+        }    
+    

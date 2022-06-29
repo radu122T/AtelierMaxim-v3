@@ -28,37 +28,39 @@ const CartDrawer = ({cart}) => {
     
     
     return (
-		<div className="cartDrawer" id="cartDrawer">
-            <div className="closeDrawerSection">
-                <button id ="closeDrawer" className="closeDrawer"><i className="fa-solid fa-x"></i></button>
-            </div>
-            
-            <section className="titleCartDrawer">
-                <h2>{cart.length>0 ? "Cosul dumneavoastra" : "Cosul dumneavoastra este gol"}</h2>
-            </section>
-
-            {cart.length>0 && <section className="toperDrawer">
-                    <span>Produs</span>
-                    <span>Pret</span>
-                    <span className="qtyTitle">Cantitate</span>
-			</section>}
-            {cart.length>0 && <main>
-                <div className="shopping-cart" id="shopping-cart">
-                {cart.map((item) => (
-                    <CartItem key={item.key}  item={item} />
-                ))}
+        <div className="drawerContainer">
+		    <div className="cartDrawer" id="cartDrawer">
+                <div className="closeDrawerSection">
+                    <button id ="closeDrawer" className="closeDrawer"><i className="fa-solid fa-x"></i></button>
                 </div>
-            </main>}
-            <section className="totalDrawer">
-                {cart.length>0 && <span>Pret transport: 20 lei</span>}
-                {cart.length>0 && <span>Pret total: {totalPrice+20} lei</span>}
-            </section>
-             {cart.length>0 && <div className="buttonDrawerContainer">
-                <Link to="/cart">
-                    <button className="buttonCartDrawer">Vezi cosul</button>
-                </Link>
-            </div>}
-		</div>
+
+                <section className="titleCartDrawer">
+                    <h2>{cart.length>0 ? "Cosul dumneavoastra" : "Cosul dumneavoastra este gol"}</h2>
+                </section>
+
+                {cart.length>0 && <section className="toperDrawer">
+                        <span>Produs</span>
+                        <span>Pret</span>
+                        <span className="qtyTitle">Cantitate</span>
+		    	</section>}
+                {cart.length>0 && <main>
+                    <div className="shopping-cart" id="shopping-cart">
+                    {cart.map((item) => (
+                        <CartItem key={item.key}  item={item} />
+                    ))}
+                    </div>
+                </main>}
+                <section className="totalDrawer">
+                    {cart.length>0 && <span>Pret transport: 20 lei</span>}
+                    {cart.length>0 && <span>Pret total: {totalPrice+20} lei</span>}
+                </section>
+                 {cart.length>0 && <div className="buttonDrawerContainer">
+                    <Link to="/cart">
+                        <button className="buttonCartDrawer">Vezi cosul</button>
+                    </Link>
+                </div>}
+		    </div>
+        </div>
     )
 }
 const mapStateToProps = (state) => {

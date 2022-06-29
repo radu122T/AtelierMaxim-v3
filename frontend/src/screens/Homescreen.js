@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import Nav from "./../components/Nav"
 import Footer from "./../components/Footer"
 import Header from "./../components/homeComponents/Header"
@@ -9,7 +9,7 @@ import CartDrawer from "./../components/homeComponents/CartDrawer"
 
 
 const HomeScreen = () => {
-    
+   
     return (
         <div className="container-root">
             <Nav />

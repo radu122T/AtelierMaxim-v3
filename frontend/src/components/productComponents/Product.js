@@ -7,7 +7,10 @@ import { addToCart, loadCurrentItem } from "../../redux/Shopping/shopping-action
 const Product = ({productData ,addToCart, loadCurrentItem})=> {
     
     const drawer = ()=> {addToCart(productData.id)
+        const containerDrawer = document.querySelector(".drawerContainer")
         cartDrawer.style.display="flex"
+        if (cartDrawer.style.display="flex")
+            containerDrawer.style.display="flex"
         }
     return (
         <div className={`item ${productData.display} ${productData.tip}`}>
@@ -17,13 +20,9 @@ const Product = ({productData ,addToCart, loadCurrentItem})=> {
                 </Link>
                 <div className="details">
                     <p>{productData.desc}</p>
-                    <div className="priceQuantity">
-                        <div className="buttons">
-                        <span>Cantitate:</span>
-                        </div>
-                    </div>
                     <h2> {productData.price} Lei</h2>
                 </div>
+
                 <div className="productButtons">
                     <button onClick={()=>drawer()} className='addToCart' id='addToCart'>Adauga in cos</button>
                     <Link to={`/product/${productData.id}`}>

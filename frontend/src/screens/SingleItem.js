@@ -1,13 +1,13 @@
 import React, {useState,useEffect} from 'react'
 import {connect} from 'react-redux'
-import {addToCart,addDimension,addSuport } from '../redux/Shopping/shopping-actions'
+import {addToCart,addDimension,addSuport,addGravura1,addGravura2 } from '../redux/Shopping/shopping-actions'
 import Nav from "../components/Nav"
 import Footer from "../components/Footer"
 import Proiect from "../components/homeComponents/Project"
-import { ADD_SUPPORT } from '../redux/Shopping/shopping-types'
 
 
-const SingleItem = ({currentItem,addDimension,addToCart,addSuport}) => {
+
+const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,addGravura2}) => {
     
 
     const [switchGravuraCopac,setSwitchGravuraCopac] = useState(false)
@@ -17,7 +17,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport}) => {
     const [gravuraCopacInput,setGravuraCopacInput] = useState("")
     const [dimension, setDimension] = useState("16x16")
     const [supportButton,setSupportButton] = useState("NU")
-
+    const [highlight1, setHighlight1] = useState(false)
+    const [highlight2, setHighlight2] = useState(false)
     const supportGravura = () => {
         setSwitchGravuraSupport(prev=>!prev)
     }
@@ -47,9 +48,11 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport}) => {
     
     const supportDA = () => {
         setSupportButton("DA")
+        setHighlight1(prev=>!prev)
     }
     const supportNU = () => {
         setSupportButton("NU")
+        setHighlight2(prev=>!prev)
     }
     const options = [
         {
@@ -72,6 +75,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport}) => {
         addToCart(currentItem.id)
         addDimension(currentItem.id,dimension)
         addSuport(currentItem.id,supportButton)
+        addGravura1(currentItem.id,gravuraCopacInput)
+        addGravura2(currentItem.id,gravuraSuportInput)
     }
 
     return (
@@ -110,8 +115,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport}) => {
                                 <span>Suport:</span>
                             </div>
                             <div className="rightProduct support">
-                                <button onClick={supportDA}>DA</button>
-                                <button onClick={supportNU}>NU</button>
+                                <button style={ highlight1 ^ !highlight2? { background:"#c1c1c1"} : {background:"white"}} onClick={supportDA}>DA</button>
+                                <button style={ highlight2 ^ highlight1 ?  { background:"#c1c1c1"} : {background:"white"}} onClick={supportNU}>NU</button>
                             </div>
                         </li>
                         <li id="custom-select">
@@ -170,6 +175,8 @@ const mapDispatchToProps = dispatch => {
         addToCart: (id) => dispatch(addToCart(id)),
         addDimension: (id,value) => dispatch(addDimension(id,value)),
         addSuport:(id,value)=>dispatch(addSuport(id,value)),
+        addGravura1:(id,value)=>dispatch(addGravura1(id,value)),
+        addGravura2:(id,value)=>dispatch(addGravura2(id,value)),
     }
 }
 
