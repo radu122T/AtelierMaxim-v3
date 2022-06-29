@@ -819,7 +819,12 @@ input[type=number]::-webkit-inner-spin-button {
     text-align: center;
     border-radius: 0;
 }
-
+#custom-select button:focus {
+    background-color:white
+}
+#custom-select button:active {
+    background-color: #c1c1c1;
+}
 /******************************************
 /* Single Product
 /*******************************************/

@@ -3,7 +3,9 @@ import CartItem from "../cartComponents/CartItem"
 import { connect } from "react-redux"
 import closeDrawer from "../CloseDrawer"
 import { Link } from "react-router-dom"
+
 const CartDrawer = ({cart}) => {
+    
 	useEffect(()=>{
         if (cart.length>0)
 		{closeDrawer()}})
@@ -23,7 +25,8 @@ const CartDrawer = ({cart}) => {
         setTotalItems(items)
     }, [cart,totalPrice, totalItems, setTotalPrice, setTotalItems])
     
-
+    
+    
     return (
 		<div className="cartDrawer" id="cartDrawer">
             <div className="closeDrawerSection">

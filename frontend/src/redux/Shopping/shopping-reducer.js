@@ -10,7 +10,6 @@ const INITIAL_STATE = {
 
 const shopReducer = (state = INITIAL_STATE, action) => {
     switch (action.type) {
-
     case actionTypes.ADD_TO_CART:
         const item = state.products.find((prod) => prod.id === action.payload.id);
         const inCart = state.cart.find((item) =>
@@ -32,12 +31,13 @@ const shopReducer = (state = INITIAL_STATE, action) => {
         ...state,
         cart: state.cart.filter((item) => item.id !== action.payload.id),
         };
+
     case actionTypes.ADJUST_QTY:
         return {
         ...state,
         cart: state.cart.map((item) =>
             item.id === action.payload.id
-            ? { ...item, qty: +action.payload.qty }
+            ? { ...item, qty:  + action.payload.qty }
             : item
         ),
         };
@@ -46,9 +46,27 @@ const shopReducer = (state = INITIAL_STATE, action) => {
             ...state,
             currentItem: action.payload,
         };
+    case actionTypes.ADD_DIMENSION_ITEM:
+        console.log(action.payload.dimension)
+    return {
+        ...state,
+        cart: state.cart.map((item) =>
+            item.id === action.payload.id
+            ? { ...item, dimension: `${action.payload.dimension}` }
+            : item
+        ),
+        }
+        case actionTypes.ADD_SUPPORT:
+    return {
+        ...state,
+        cart: state.cart.map((item) =>
+            item.id === action.payload.id
+            ? { ...item, support: `${action.payload.support}` }
+            : item
+        ),
+        }
     default:
-        return state;
-    }
+        return state;}
 };
 
 export default shopReducer;

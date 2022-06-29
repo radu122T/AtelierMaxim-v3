@@ -34,3 +34,25 @@ export const loadCurrentItem = (item) => {
         payload: item,
         }
     }
+
+
+export const addDimension = (itemID,dimension) => {
+    return {
+            type: actionTypes.ADD_DIMENSION_ITEM,
+            payload: {
+                id: itemID,
+                dimension:dimension,
+            }
+        }
+    }
+
+export const addSuport = (itemID,support) => {
+    return {
+            type: actionTypes.ADD_SUPPORT,
+            payload: {
+                id: itemID,
+                support:support,
+                }
+            }
+        }    
+    

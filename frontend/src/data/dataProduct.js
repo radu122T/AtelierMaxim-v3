@@ -8,7 +8,11 @@ let shopItemsData = [
       price: 45,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.43"
+      greutate: "0.43",
+      dimension:"",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
     {
       key:"6",
@@ -19,7 +23,11 @@ let shopItemsData = [
       price: 100,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.45"
+      greutate: "0.45",
+      dimension:"",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
     {
       key:"5",
@@ -30,7 +38,11 @@ let shopItemsData = [
       price: 25,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.12"
+      greutate: "0.12",
+      dimension:"",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
     {
       key:"4",
@@ -41,7 +53,11 @@ let shopItemsData = [
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.53"
+      greutate: "0.53",
+      dimension:"",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
     {
       key:"3",
@@ -52,7 +68,11 @@ let shopItemsData = [
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.25"
+      greutate: "0.25",
+      dimension:"",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
     {
       key:"12",
@@ -63,7 +83,11 @@ let shopItemsData = [
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
       img: "/images/produs1.jpg",
-      greutate: "0.44"
+      greutate: "0.44",
+      dimension:"none",
+      support: "",
+      gravura1:"",
+      gravura2:"",
     },
   ];
   
