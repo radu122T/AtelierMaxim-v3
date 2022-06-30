@@ -1,7 +1,8 @@
 {
-  "name": "atelier-maxim-3.0",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "shoeshop",
+  "version": "0.1.0",
+  "proxy":"http://localhost:5000",
+  "private": true,
   "scripts": {
     "build": "webpack",
     "dev": "webpack serve"
@@ -26,12 +27,14 @@
     "babel-cli": "^6.26.0",
     "babel-preset-react-app": "^3.1.2",
     "cloudinary-core": "^2.12.3",
+    "dotenv": "^16.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^8.0.2",
     "react-router": "^6.3.0",
     "react-router-dom": "^6.3.0",
     "react-scripts": "^5.0.1",
+    "react-toastify": "^9.0.5",
     "redux": "^4.2.0",
     "redux-devtools-extension": "^2.13.9"
   },

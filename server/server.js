@@ -1,18 +1,13 @@
-const express = require('express')
-const app = express()
-const PORT = 2121    
-require('dotenv').config()
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
 
-app.use(express.static('dist'))
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
+dotenv.config();
+const app = express();
+app.use(express.json());
+app.use(cors())
+app.use(express.static('public'))
 
+const PORT = process.env.PORT || 1000;
 
-app.get('/',(req, res)=>{
-    res.sendFile(__dirname, 'index.html')
-})
-
-
-app.listen(process.env.PORT || PORT, ()=>{
-    console.log(`Server running on port ${PORT}`)
-})
+app.listen(PORT, console.log(`server run in port ${PORT}`));

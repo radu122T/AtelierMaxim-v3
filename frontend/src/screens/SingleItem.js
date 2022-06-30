@@ -4,8 +4,8 @@ import {addToCart,addDimension,addSuport,addGravura1,addGravura2 } from '../redu
 import Nav from "../components/Nav"
 import Footer from "../components/Footer"
 import Proiect from "../components/homeComponents/Project"
-
-
+import {ToastContainer, toast, Zoom, Bounce,Flip} from "react-toastify"
+import 'react-toastify/dist/ReactToastify.css'
 
 const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,addGravura2}) => {
     
@@ -77,6 +77,15 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
         addSuport(currentItem.id,supportButton)
         addGravura1(currentItem.id,gravuraCopacInput)
         addGravura2(currentItem.id,gravuraSuportInput)
+        toast.success("Produs adaugat in cos!", {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            });
     }
 
     return (
@@ -159,6 +168,20 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
             </section>
             </main>
             <Proiect />
+            <ToastContainer
+                toastStyle={{ backgroundColor: "white",color: "black" }}
+                position="top-right"
+                autoClose={2000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                transition={Flip}
+                limit={2}
+            />
             <Footer />
     </div>
     )
