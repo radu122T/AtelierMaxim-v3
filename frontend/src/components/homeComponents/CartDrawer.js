@@ -38,11 +38,7 @@ const CartDrawer = ({cart}) => {
                     <h2>{cart.length>0 ? "Cosul dumneavoastra" : "Cosul dumneavoastra este gol"}</h2>
                 </section>
 
-                {cart.length>0 && <section className="toperDrawer">
-                        <span>Produs</span>
-                        <span>Pret</span>
-                        <span className="qtyTitle">Cantitate</span>
-		    	</section>}
+
                 {cart.length>0 && <main>
                     <div className="shopping-cart" id="shopping-cart">
                     {cart.map((item) => (

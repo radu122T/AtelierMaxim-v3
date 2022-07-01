@@ -9,7 +9,7 @@ const Header = ()=> {
 			</section>
 			<section className="secondSection">
 				<h1>Decoratiuni <br/> din lemn</h1>
-				<button><a href="#inter">Vezi produsele</a> </button>
+				<div className='veziProdusele'><a href="#inter"><span className='veziProduseleSpan'>Vezi produsele</span></a></div>
 			</section>
 			<section className="lastSection">
 				<a href="#inter">Exploreaza <i className="fa-solid fa-arrow-down-long"></i></a>

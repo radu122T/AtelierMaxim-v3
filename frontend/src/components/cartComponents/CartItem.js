@@ -19,16 +19,9 @@ const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
                 <div className="cartProductImg">
                     <img src={item.img} alt="" />
                 </div>
-                <p>{item.desc}</p>
-            </div>
-
-            <div className="details">
-                <div className="cartDrawerPrice">
-                    <p>{item.price} lei</p>
-                </div>
-            </div>
-
-            <div className="buttons">
+                <div className="cartProductDescCant">
+                    <p>{item.desc}</p>
+                    <div className="buttons">
                 <div className="quantityCartDrawer">
                 <label htmlFor="qty"></label>
                     <input className="drawerInput"
@@ -41,6 +34,33 @@ const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
                     />
                 </div>
             </div>
+                </div>
+                
+            </div>
+            {(item.gravura1 || item.gravura2) && <div className="cartInputs">
+                {item.gravura1 && <div className="cartInput1">
+                    <p>Gravura copac: {item.gravura1}</p>
+                </div>}
+                {item.gravura2 && <div className="cartInput2">
+                    <p>Gravura suport: {item.gravura2}</p>
+                </div>}
+            </div>}
+            {(item.dimension || item.support) && <div className="cartSuportDimensiuni">
+                {item.dimension && <div className="cartDimensiune">
+                    <p>Dimensiune: {item.dimension}</p>
+                </div>}
+                {item.support && <div className="cartSupport">
+                    <p>Suport: {item.support}</p>
+                </div>}
+            </div>}
+            
+            <div className="details">
+                <div className="cartDrawerPrice">
+                    <p><span className="cartDrawerPriceSpan">{input} x</span>{item.price} lei</p>
+                </div>
+            </div>
+
+            
 
             <i onClick= {() => removeFromCart(item.id)} className="xInDrawer fa-solid fa-xmark"></i>
         </div>

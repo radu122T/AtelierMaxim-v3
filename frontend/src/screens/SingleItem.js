@@ -15,8 +15,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
     const [switchFaraGravura,setSwitchFaraGravura] = useState(true)
     const [gravuraSuportInput,setGravuraSuportInput] = useState("")
     const [gravuraCopacInput,setGravuraCopacInput] = useState("")
-    const [dimension, setDimension] = useState("16x16")
-    const [supportButton,setSupportButton] = useState("NU")
+    const [dimension, setDimension] = useState("16x16cm")
+    const [supportButton,setSupportButton] = useState("Da")
     const [highlight1, setHighlight1] = useState(false)
     const [highlight2, setHighlight2] = useState(false)
     const supportGravura = () => {
@@ -47,23 +47,23 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
     }
     
     const supportDA = () => {
-        setSupportButton("DA")
+        setSupportButton("Da")
         setHighlight1(prev=>!prev)
     }
     const supportNU = () => {
-        setSupportButton("NU")
+        setSupportButton("Nu")
         setHighlight2(prev=>!prev)
     }
     const options = [
         {
             key:"1",
-            label: "16x16",
-            value: "16x16",
+            label: "16x16cm",
+            value: "16x16cm",
         },
         {
             key:"2",
-            label: "32x32",
-            value: "32x32",
+            label: "32x32cm",
+            value: "32x32cm",
         },
         ];
 
@@ -79,7 +79,7 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
         addGravura2(currentItem.id,gravuraSuportInput)
         toast.success("Produs adaugat in cos!", {
             position: "top-right",
-            autoClose: 2000,
+            autoClose: 1000,
             hideProgressBar: false,
             closeOnClick: true,
             pauseOnHover: true,
@@ -111,12 +111,14 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
                             <div className="leftProduct">
                                 <span>Dimensiuni:</span>
                             </div>
-                            <div className="rightProduct">
-                            <select value={dimension} onChange={handleChangeDimension}>
-                                {options.map((option) => (
-                                    <option key={option.key} value={option.value}>{option.label}</option>
-                                    ))}
-                            </select>
+                            <div className="singleItemDimensionContainer rightProduct">
+                                <div className="singleItemDimension">
+                                    <select value={dimension} onChange={handleChangeDimension}>
+                                        {options.map((option) => (
+                                            <option key={option.key} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                         </li>
                         <li>
@@ -124,8 +126,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
                                 <span>Suport:</span>
                             </div>
                             <div className="rightProduct support">
-                                <button style={ highlight1 ^ !highlight2? { background:"#c1c1c1"} : {background:"white"}} onClick={supportDA}>DA</button>
-                                <button style={ highlight2 ^ highlight1 ?  { background:"#c1c1c1"} : {background:"white"}} onClick={supportNU}>NU</button>
+                                <button style={ highlight1 ^ !highlight2? { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportDA}>DA</button>
+                                <button style={ highlight2 ^ highlight1 ?  { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportNU}>NU</button>
                             </div>
                         </li>
                         <li id="custom-select">
@@ -140,22 +142,31 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
                                 </div>
                             </div>
                         </li>
-                    {switchFaraGravura && switchGravuraCopac && <div>
-                        <label>Gravura pe Copac</label>
-                        <input className="copacInput"
-                            type="text"
-                            value={gravuraCopacInput}
-                            onChange={onChangeHandlerCopac}
-                        />
-                    </div>}
-                    {switchFaraGravura && switchGravuraSupport && <div>
-                        <label>Gravura pe suport</label>
-                        <input className="supportInput"
-                            type="text"
-                            value={gravuraSuportInput}
-                            onChange={onChangeHandlerSupport}
-                        />
-                    </div>}
+                        {switchFaraGravura && switchGravuraCopac && <li id='gravura1' className='gravuraInputs'>
+                        <div className='leftProduct'>
+                            <label >Gravura pe copac:</label>
+                        </div>
+                        <div className='rightProduct'>
+                            <input className="copacInput"
+                                type="text"
+                                value={gravuraCopacInput}
+                                onChange={onChangeHandlerCopac}
+                            />
+                        </div>
+                    </li>}
+                    {switchFaraGravura && switchGravuraSupport && <li id='gravura2' className='gravuraInputs'>
+                        <div className='leftProduct'>
+                            <label >Gravura pe suport:</label>
+                        </div>
+                        <div className='rightProduct'>
+                            <input className="supportInput"
+                                type="text"
+                                value={gravuraSuportInput}
+                                onChange={onChangeHandlerSupport}
+                            />
+                        </div>
+                        
+                    </li>}
 
                     </ul>
                     <section className="lastSectionProdus">
@@ -171,7 +182,7 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
             <ToastContainer
                 toastStyle={{ backgroundColor: "white",color: "black" }}
                 position="top-right"
-                autoClose={2000}
+                autoClose={1000}
                 hideProgressBar={false}
                 newestOnTop={false}
                 closeOnClick

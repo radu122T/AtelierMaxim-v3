@@ -243,8 +243,6 @@ nav .container ul {
     padding-top:10px;
     z-index: -1;
     margin-top:50px;
-    
-    
 }
 
 .headerhomeScreen .secondSection {
@@ -256,18 +254,30 @@ nav .container ul {
     font-size: calc(26px + 6 * ((100vw - 320px) / 250))
 }
 
-.headerhomeScreen button {
+.veziProdusle a {
+    display: block;
+    height: 20px;;
+    width: fit-content;
+}
+
+.veziProduseleSpan {
+    display:flex;
     background-color: white;
     outline: 0;
     border: black solid 1px;
-    height: 40px;
+    height: 30px;
     font-family: 'Niramit', sans-serif;
     color:black;
     border-radius: 5px;
-    text-transform: uppercase;
     font-weight: 500;
     font-size: calc(14px + 6 * ((100vw - 320px) / 900));
+    width:70%;
+    justify-content: center;
+    align-items: center;
+    padding-top:2px;
+
 }
+
 
 .headerhomeScreen .lastSection {
     position:absolute;
@@ -294,10 +304,10 @@ nav .container ul {
 .inter {
     white-space: nowrap;
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: 10px;
     padding-top:20px;
-    font-size: calc(12px + 6 * ((100vw - 320px) / 940));
+    font-size: calc(14px + 6 * ((100vw - 320px) / 300));
     text-align:center ;
 }
 
@@ -347,10 +357,11 @@ nav .container ul {
 }
 .item>div {
     background:rgba(0, 0, 0, 0.425);
-    padding:10px 8px;
+    padding:8px 10px 20px;
     height: fit-content;
-    font-size:0.7rem;
+    font-size:calc(10px + 6 * ((100vw - 320px) / 300));
     text-align:center;
+    border-radius: 5px;
 }
 .shop img {
     display:block;
@@ -375,20 +386,26 @@ nav .container ul {
 .productButtons {
     display:flex;
     justify-content: space-around;
+    align-items: center;
     padding-top:10px;
 }
-
+.productButtons a{
+    display:block;
+    height: fit-content;
+}
 .productButtons button {
-    height:25px;
-    font-size:0.5rem;
-    font-weight: 500;
+    height:calc(25px + 6 * ((100vw - 320px) / 200));
+    font-size:calc(6px + 6 * ((100vw - 320px) / 200));
+    font-weight: 600;
     color:white;
     border-radius: 7px;
     cursor: pointer;
     border:none;
+    width:50%;
 }
 .productButtons button:first-child {
     background-color: #346751;
+    margin-right:5%
 }
 
 .productButtons button:first-child:hover {
@@ -402,7 +419,57 @@ nav .container ul {
     background-color:rgb(180, 86, 43) ; 
 }
 
+.productDetailsDimensionContainer{
+    display:flex;
+    justify-content: center;
+} 
+.productDetailsDimension,
+.productDetailsDimension * {
+    display:flex;
 
+    width:75px;
+    
+    position: relative;
+    box-sizing: border-box;
+}
+.productDetailsDimension {
+    background-color: #E6E6E6;
+    height:19px;
+    border-radius: 5px;
+    margin:5% 0;
+}
+.productDetailsDimension select {
+    position:relative;
+    bottom:1px;
+    font-size: 0.6rem;
+    font-weight: normal;
+    max-width: 100%;
+    border: none;
+    background-color: transparent;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #E6E6E6;
+    border-radius: 5px;
+    padding-left:12px;
+
+}
+.productDetailsDimension select:active, .productDetailsDimension select:focus {
+    outline: none;
+    box-shadow: none;
+}
+.productDetailsDimension:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 0;
+    height: 0;
+    margin-top: -2px;
+    border-top: 5px solid #aaa;
+    border-right: 5px solid transparent;
+    border-left: 5px solid transparent;
+}
 /******************************************
 /* CartDrawer
 /*******************************************/
@@ -436,7 +503,6 @@ nav .container ul {
     bottom: 0;
     background-color: rgba(0,0,0,0.5);
     z-index: 2;
-    cursor: pointer;
 }
 
 .cartDrawer::-webkit-scrollbar {
@@ -452,15 +518,15 @@ nav .container ul {
 
 .titleCartDrawer {
     width:50%;
-    margin: 10px auto 25px;
+    margin: 10px auto;
     text-align: center;
     font-size:1.2rem;
     font-weight: 600;
 }
 
 .cartDrawer main {
-    margin:5%;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.123);
+    margin:5% 5% 0%;
+    
 }
 .closeDrawerSection {
     display:flex;
@@ -483,20 +549,6 @@ nav .container ul {
     padding-left:5px;
 }
 
-.toperDrawer {
-    display:grid;
-    grid-template-columns:2fr 1fr 1fr;
-    margin:0 5%;
-    text-align: center;
-    height:40px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.123);
-    align-items: center;
-    font-size:1.2rem;
-}
-
-.qtyTitle {
-    text-align: left;
-}
 
 .cartDrawerDetails div {
     text-align: center;
@@ -507,7 +559,10 @@ nav .container ul {
     display:flex;
 }
 .cartProductImg {
-    width:50%
+    display:flex;
+    width:40%;
+    justify-content: center;
+    
 }
 .cartProductImg img {
     display:block;
@@ -518,20 +573,26 @@ nav .container ul {
 }
 .cartProduct {
     display:flex;
-    width:50%;
+    width:100%;
 }
 
 .cartProduct p {
-    font-size:0.9rem;
     padding-left:5px;
-    width:50%;
+    width:95%;
+    font-weight: 500;
 }
 .cart-item {
     display:flex;
     justify-content: space-between;
     margin-bottom:10%;
-    align-items: center;
-    
+    flex-direction: column;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.123);
+    padding-bottom:10px;
+    font-size:0.9rem;
+}
+.cart-item:first-child {
+    border-top: 1px solid rgba(0, 0, 0, 0.123);
+    padding-top:10px;
 }
 .cartDrawer .buttons input {
     width:50px;
@@ -539,7 +600,12 @@ nav .container ul {
     border:none;
     border:solid 1px black;
     text-align: center;
-    font-size:0.98rem;
+    font-size:0.9rem;
+}
+
+.cartDrawerPriceSpan {
+    color:gray;
+    padding-right:3px;
 }
 input[type=number]::-webkit-inner-spin-button {
     opacity: 1;
@@ -549,39 +615,14 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 .xInDrawer {
-    align-self: start;
+    align-self: end;
     cursor: pointer;
-}
-
-.cartDrawerPrice {
-    font-size:1.2rem;
-}
-.minus, .plus {
-    display:flex;
-    justify-content: center;
-    align-items: center;
-    cursor:pointer;
-    width:15px;
-    height:25px;
-    background-color:lightgrey;
-    font-size:0.7rem;
-    border-radius:4px;
-    color:black;
-    font-weight: 600;
-}
-
-.quantityButtons {
-    display:flex;
-    align-items: center;
-    margin-left:2px;
-}
-.minus:hover, .plus:hover {
-    background-color:rgb(190, 190, 190);
+    order:-1
 }
 
 .totalDrawer {
-    font-size:1.2rem;
-    width:50%;
+    font-size:1rem;
+    width:60%;
     margin:0 auto;
     text-align: center;
 }
@@ -610,45 +651,11 @@ input[type=number]::-webkit-inner-spin-button {
 .buttonCartDrawer:hover {
     background-color:rgb(235, 96, 54); ;
 }
-.plus {
-    border-top-left-radius:0;
-    border-bottom-left-radius:0;
-}
-
-.minus {
-    border-top-right-radius:0;
-    border-bottom-right-radius:0;
-}
 
 .containerC {
     text-align: center;
 }
 
-.checkout {
-    display:inline-block;
-    border:black;
-    background-color:#ec6336 ;
-    border-radius:5px;
-    width:250px;
-    height:35px;
-    font-size:1.2rem;
-    margin:0 auto;
-    padding-top:2px;
-}
-.priceDrawer {
-    margin-bottom: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.123);
-    padding:5%;
-    text-align: center;
-}
-.drawerQuantity {
-    display:flex;
-    justify-content: center;
-    
-}
-.drawerQuantity .quantity {
-    border: 1px solid black;
-}
 
 .cartDrawer {
     transition: left 0.3s ease-in-out;
@@ -719,8 +726,6 @@ input[type=number]::-webkit-inner-spin-button {
     margin-bottom: 50px;
 }
 
-
-
 .secondSectionProdus input {
     width:22px;
     height:19px;
@@ -739,6 +744,7 @@ input[type=number]::-webkit-inner-spin-button {
     padding-bottom: 9px;
     
 }
+
 .leftProduct {
     grid-area:left;
 } 
@@ -751,7 +757,22 @@ input[type=number]::-webkit-inner-spin-button {
     font-size: 0.93rem;
     font-weight: 400;
 }
+#gravura1,#gravura2 {
+    display:flex;
+    justify-content:space-between;
+    align-items: center;
+}
+#gravura1 .leftProduct, #gravura2 .leftProduct {
+    width:50%
+}
 
+#gravura1 .rightProduct, #gravura2 .rightProduct {
+    width:50%;
+}
+
+#gravura1 input, #gravura2 input {
+    width:100%;
+}
 #custom-select {
     display:flex;
     justify-content: space-between;
@@ -762,7 +783,7 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 #custom-select button:first-child {
-    margin-right:-6px;
+    margin-right:-2px;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
 }
@@ -814,11 +835,12 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 .support button {
-    background: white;
+    background: #E6E6E6;
     border: 1px solid black;
     border-radius: 3px;
     cursor: pointer;
     padding:5px 10px;
+    text-align: center;
 }
 
 .support button:focus {
@@ -831,8 +853,7 @@ input[type=number]::-webkit-inner-spin-button {
 
 
 .support button:last-child {
-    margin-left:-6px;
-    
+    margin-left:-2px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
@@ -861,6 +882,59 @@ input[type=number]::-webkit-inner-spin-button {
 }
 #custom-select button:active {
     background-color: #c1c1c1;
+}
+
+#custom-select .rightProduct {
+    display: flex;
+    justify-content:center;
+}
+.singleItemDimensionContainer{
+    display:flex;
+    justify-content: center;
+} 
+.singleItemDimension,
+.singleItemDimension * {
+    width:85px;
+    height:25px;
+    position: relative;
+    
+}
+.singleItemDimension {
+    position: relative;
+    background-color: #E6E6E6;
+    border-radius: 5px;
+    
+}
+.singleItemDimension select {
+    position:relative;
+    bottom:2px;
+    font-weight: normal;
+    max-width: 100%;
+    border: none;
+    background-color: transparent;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #E6E6E6;
+    border-radius: 5px;
+    padding-left:5px;
+    font-size:0.8rem;
+}
+.singleItemDimension select:active, .singleItemDimension select:focus {
+    outline: none;
+    box-shadow: none;
+}
+.singleItemDimension:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 0;
+    height: 0;
+    margin-top: -2px;
+    border-top: 5px solid #aaa;
+    border-right: 5px solid transparent;
+    border-left: 5px solid transparent;
 }
 /******************************************
 /* Single Product
@@ -891,7 +965,9 @@ footer h4 {
     font-size:1.6rem;
     text-align: center;
 }
-
+.titleFooter{
+    text-align: center;
+}
 .footerOne {
     text-align: center;
     font-weight: 500;
@@ -928,247 +1004,201 @@ footer h4 {
 /* MEDIA Q
 /*******************************************/
 
-@media only screen and (min-width: 600px) and (max-width: 950px) {
+@media only screen and (min-width: 700px) and (max-width: 1200px) {
     body{
-         margin:0 6%;
+        margin:0 6%;
     }
     main {
-         margin:0;
+        margin:0;
     }
     .logo img{
-         width:55px;
+        width:65px;
     }
-    header {
-         height:90vh
-    }
-    header .firstSection {
-         top:12vh;
-    }
-    header .secondSection {
-         left:15%;
-         top:48vh;
-    }
-
-    .shop {
-         display:grid;
-         grid-template-columns: repeat(3, 1fr);
-         column-gap:20px;
-         row-gap: 20px;
-         padding-bottom:20px;
-    }
-    .details {
-         font-size:0.8rem
-    }
-    .productButtons button {
-         height:28px;
-         font-size:0.6rem;
-         border-radius: 8px;
-    }
-
-    .fa-minus, .fa-plus {
-         width:11px;
-         height:15px;
-         font-size:0.7rem;
-    }
-    
-    .fa-plus {
-         padding-top:1px;
-    }
-    .quantity {
-         font-size:0.6rem;
-         height:15px;
-    }
-} 
-
-@media only screen and (min-width: 950px) and (max-width: 1100px) {
-    body{
-         margin:0 6%;
-         
-    }
-    main {
-         margin:0;
-    }
-    nav {
-         font-size:1.2rem;
+    .rightSide {
+        font-size:1.3rem;
     }
     .menu {
-         display:none;
-    }
-    .leftSide{
-         display:contents;
-    }
-    .leftSide a{
-         display:inline-block;
-         padding-left:10px;
-         padding-top:5px;
-    }
-    .rightSide span {
-         display:contents;
-    }
-    .rightSide{
-         font-size: 1.2rem;;
-    }
-    .logo img{
-         width:60px;
-    }
-    nav .container ul {
-         margin-bottom:0.5vh;
+        font-size:1.3rem;
+        display:flex;
+        align-items: center;
     }
     header {
-         height:100vh
+        height:90vh
     }
     header .firstSection {
-         top:10vh;
-         left:38%;
+        top:12vh;
+        max-width:600px;
+        width:100%;
     }
     header .secondSection {
-         left:15%;
-         top:45vh;
+        left:15%;
+        top:48vh;
+        
     }
-    header .lastSection {
-         right:100px;
-         font-size:1.2rem;
-         
+    header .secondSection h1 {
+        font-size:3.1rem;
+    }
+    .veziProduseleSpan {
+        height:45px;
+        font-size:1.5rem;
+        padding-top:3px;
+        width:65%;
     }
     .inter {
-         padding-bottom:15px;
+        margin-bottom: 20px;;
+    }
+    .headerhomeScreen .lastSection {
+        font-size:1.5rem;
     }
     .shop {
-         display:grid;
-         grid-template-columns: repeat(4, 1fr);
-         column-gap:20px;
-         row-gap: 20px;
-         padding-bottom:20px;
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        column-gap:20px;
+        row-gap: 20px;
+        padding-bottom:20px;
     }
-
+ 
     .productButtons button {
-         height:34px;
-         font-size:0.8rem;
-         border-radius: 8px;
-         font-weight:500;
-    }
-    .fa-minus, .fa-plus {
-         width:15px;
-         height:15px;
-         font-size:0.7rem;
+        height:35px;
+        font-size:calc(6px + 6 * ((100vw - 320px) / 450));
+        border-radius: 8px;
     }
     
-    .fa-plus {
-         padding-top:1px;
-    }
-    .quantity {
-         font-size:0.7rem;
-         height: 15px;
-    }
-    .details {
-         font-size:1rem
-    }
     .project {
-         margin:auto;
-         width:50%;
-         color:white;
-         padding:50px 0;
-         font-size:1.2rem;
+        font-size:calc(10px + 6 * ((100vw - 330px) / 300));
+    }
+    .cartDrawer {
+        width:450px;
+    }
+    .titleCartDrawer {
+        font-size:1.3rem;
+    }
+    .cart-item {
+        font-size:1.3rem;
+    }
+    .cartDrawerPriceSpan {
+        padding-right: 6px;
+    }
+    .totalDrawer {
+        font-size:1.4rem;
     }
 }
+@media only screen and (min-width: 1200px) {
+        body{
+            margin:0 6%;
+        }
+        main {
+            margin:0;
+        }
+        .logo img{
+            width:80px;
+        }
+        .rightSide {
+            font-size:1.5rem;
+        }
+        .menu {
+            font-size:1.5rem;
+            display:flex;
+            align-items: center;
+            display:none;
+        }
+        .leftSide {
+            display:flex;
+            font-size:1.5rem;
+            align-items: center;
+        }
+        header {
+            height:90vh
+        }
+        .headerhomeScreen .firstSection {
+            top:12%;
+        }
+        .headerhomeScreen .firstSection img {
+            width:550px;
+        }
+        header .secondSection {
+            left:15%;
+            top:48vh;
+            
+        }
+        header .secondSection h1 {
+            font-size:calc(60px + 6 * ((100vw - 500px) / 600))
+        }
 
+        .headerhomeScreen .secondSection {
+            left:15%;
+        }
+        .veziProduseleSpan {
+            height:55px;
+            font-size:2rem;
+            padding-top:3px;
+            width:55%;
+        }
+        .headerhomeScreen .lastSection {
+            font-size:1.7rem;
+        }
+        .inter {
+            margin-bottom: 55px;
+            font-size: calc(14px + 6 * ((100vw - 320px) / 600));
+        }
 
-@media only screen and (min-width: 1100px) {
-    body{
-         margin:0 6%;
-    }
-    main {
-         margin:0;
-    }
-    nav {
-         font-size:1.25rem;
-    }
-    .menu {
-         display:none;
-    }
-    .leftSide{
-         display:contents;
-    }
-    .leftSide a{
-         display:inline-block;
-         padding-left:10px;
-         padding-top:5px;
-    }
-    .rightSide span {
-         display:contents;
-    }
-    .rightSide{
-         font-size: 1.25rem;;
-    }
-    .logo img{
-         width:60px;
-    }
-    nav .container ul {
-         margin-bottom:0.5vh;
-    }
-    header {
-         height:100vh
-    }
-    header .firstSection {
-         top:10vh;
-         left:38%;
-    }
-    header .secondSection {
-         left:15%;
-         top:45vh;
-    }
-    header .lastSection {
-         right:100px;
-         font-size:1.2rem;
-         
-    }
-    header button {
-         display: flex;
-         justify-content: center;
-         align-items: center;
-    }
-    .inter {
-         padding-bottom:15px;
-    }
-    .shop {
-         display:grid;
-         grid-template-columns: repeat(4, 1fr);
-         column-gap:20px;
-         row-gap: 20px;
-         padding-bottom:20px;
-    }
+        .shop {
+            display:grid;
+            grid-template-columns: repeat(4, 1fr);
+            column-gap:20px;
+            row-gap: 20px;
+            padding-bottom:20px;
+        }
+        .item>div {
+            border-radius: 10px;
+        }
+        .details {
+            font-size:calc(12px + 6 * ((100vw - 320px) / 900))
+        }
+        .productButtons button {
+            height:45px;
+            font-size:calc(10px + 6 * ((100vw - 320px) / 900));
+            border-radius: 8px;
+        }
+        .project {
+            margin:auto;
+            width:50%;
+            color:white;
+            padding:50px 0;
+            font-size:calc(10px + 6 * ((100vw - 350px) / 500));
+        }
 
-    .productButtons button {
-         height:34px;
-         font-size:0.9rem;
-         border-radius: 8px;
-         font-weight:500;
-         padding:0 15px;
-         
+        footer {
+            height:250px;    
+        }
+        
+        
+        footer h4 {
+            font-weight:800;
+            font-size:2rem;
+            text-align: center;
+        }
+        
+        .footerOne {
+            text-align: center;
+            font-weight: 500;
+            font-size:1.5rem;
+        }
+        
+        .footerTwo {
+            text-align:center;
+            font-size:1.7rem;
+        }
+        
+        .footerThree {
+            margin-top:3%;
+            text-align: center;
+            font-size:1rem;
+        }
+        
     }
-
-    .quantity {
-         font-size:0.75rem;
-         height: 15px;
-         width: 20px;
-         justify-content: center;
-    }
-    .details {
-         font-size:1.1rem
-    }
-    .project {
-         margin:auto;
-         width:50%;
-         color:white;
-         padding:50px 0;
-         font-size:1.2rem;
-    }
-
-    .productButtons button {
-         font-weight: 600;
-    }
-
-}
+    
+    
 
 /******************************************
 /* MEDIA Q

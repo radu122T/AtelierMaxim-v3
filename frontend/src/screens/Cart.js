@@ -1,5 +1,6 @@
 import React, { useEffect,useState } from "react"
 import CartItem from "../components/cartComponents/CartItem"
+import Footer from "./../components/Footer"
 import { connect } from "react-redux"
 import Nav from "../components/Nav"
 
@@ -30,6 +31,7 @@ const Cart = ({ cart }) => {
                 <span>Total: ({totalItems} produse</span>
                 <span>{totalPrice} lei</span>
 		    </main>
+            <Footer />
         </div>
     )}
 

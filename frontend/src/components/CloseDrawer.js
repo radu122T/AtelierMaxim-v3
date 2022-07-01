@@ -16,8 +16,8 @@ const closeDrawer = ()=> {
 
     if (containerDrawer.style.display ="flex") {
             document.addEventListener('click', (event) => {
-                const withinBoundariesContainer = event.composedPath().includes(containerDrawer)
-                if (withinBoundariesContainer) {
+                const withinBoundaries = event.composedPath().includes(cartDrawer)
+                if (!withinBoundaries) {
                     containerDrawer.style.display = 'none'        
                 }})}
 
