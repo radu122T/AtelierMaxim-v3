@@ -1,6 +1,6 @@
 let shopItemsData = [
     {
-      key:"7",
+      key:"1",
       id: "jfhgbvnscs",
       tip:"celeMaiVanduteProduse",
       display:"display",
@@ -15,7 +15,7 @@ let shopItemsData = [
       gravura2:"",
     },
     {
-      key:"6",
+      key:"2",
       id: "ioytrhndcv",
       tip:"celeMaiVanduteProduse",
       display:"display",
@@ -30,7 +30,7 @@ let shopItemsData = [
       gravura2:"",
     },
     {
-      key:"5",
+      key:"3",
       id: "wuefbncxbsn",
       tip:"noutatiProduse",
       display:"display",
@@ -60,7 +60,7 @@ let shopItemsData = [
       gravura2:"",
     },
     {
-      key:"3",
+      key:"5",
       id: "thydsafhcbcv",
       tip:"noutatiProduse",
       display:"display",
@@ -75,7 +75,7 @@ let shopItemsData = [
       gravura2:"",
     },
     {
-      key:"12",
+      key:"6",
       id: "thyasaewqfhcbcv",
       tip:"noutatiProduse",
       display:"display",

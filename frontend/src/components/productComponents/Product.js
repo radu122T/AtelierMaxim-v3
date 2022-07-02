@@ -1,10 +1,10 @@
-import React, {useState,useEffect} from "react"
+import React, {useState} from "react"
 import { Link } from "react-router-dom"
 import { connect } from "react-redux"
 import { addToCart, loadCurrentItem,addDimension,addSuport } from "../../redux/Shopping/shopping-actions"
 
 
-const Product = ({cart,productData ,addToCart, loadCurrentItem,addDimension,addSuport})=> {
+const Product = ({productData ,addToCart, loadCurrentItem,addDimension})=> {
     const [dimension, setDimension] = useState("16x16cm")
     // const [supportButton,setSupportButton] = useState("Da")
     // const [highlight1, setHighlight1] = useState(false)

@@ -24,9 +24,9 @@ const Cart = ({ cart }) => {
             <Nav/>
             <main>
 		    	<div className="shopping-cart" id="shopping-cart">
-                {cart.map((item) => (
-                    <CartItem key={item.id} item={item} />
-                ))}
+                    {cart.map((item) => (
+                        <CartItem key={item.id} item={item} />
+                    ))}
                 </div>
                 <span>Total: ({totalItems} produse</span>
                 <span>{totalPrice} lei</span>

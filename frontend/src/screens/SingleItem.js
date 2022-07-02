@@ -7,6 +7,7 @@ import Proiect from "../components/homeComponents/Project"
 import {ToastContainer, toast, Zoom, Bounce,Flip} from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
 
+
 const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,addGravura2}) => {
     
 
@@ -27,6 +28,8 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
         setSwitchFaraGravura(prev=>!prev)
         setSwitchGravuraSupport(false)
         setSwitchGravuraCopac(false)
+        setGravuraSuportInput("")
+        setGravuraCopacInput("")
     }
     const faraBack= () => {
         setSwitchFaraGravura(prev=>!prev)
@@ -91,6 +94,7 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
     return (
         <div className="singleItemContainer">
             <Nav/>
+            
             <main className='singleItemMain'>
             <section className="firstSectionProdus">
                 <img src={currentItem.img} alt=""/>
@@ -125,9 +129,9 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
                             <div className="leftProduct">
                                 <span>Suport:</span>
                             </div>
-                            <div className="rightProduct support">
-                                <button style={ highlight1 ^ !highlight2? { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportDA}>DA</button>
-                                <button style={ highlight2 ^ highlight1 ?  { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportNU}>NU</button>
+                            <div className="rightProduct support suport">
+                                <button style={ highlight1 ^ !highlight2? { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportDA}>Da</button>
+                                <button style={ highlight2 ^ highlight1 ?  { background:"#c1c1c1"} : {background:"#E6E6E6"}} onClick={supportNU}>Nu</button>
                             </div>
                         </li>
                         <li id="custom-select">
@@ -135,7 +139,7 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
                                 <span>Gravura:</span>
                             </div>
                             <div className="rightProduct">
-                                <div className="support">
+                                <div className="support gravuraChoice">
                                     <button onClick={both}>Fara</button>
                                     <button onClick={supportGravura}>Suport</button>
                                     <button onClick={copac}>Copac</button>
@@ -179,6 +183,7 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
             </section>
             </main>
             <Proiect />
+            
             <ToastContainer
                 toastStyle={{ backgroundColor: "white",color: "black" }}
                 position="top-right"

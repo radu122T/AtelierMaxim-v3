@@ -780,11 +780,13 @@ input[type=number] {
 }
 #gravura1,#gravura2 {
     display:flex;
-    justify-content:space-between;
+    
     align-items: center;
 }
 #gravura1 .leftProduct, #gravura2 .leftProduct {
-    width:50%
+    width:fit-content;
+    padding-right:10px;
+    white-space: nowrap
 }
 
 #gravura1 .rightProduct, #gravura2 .rightProduct {
@@ -792,7 +794,12 @@ input[type=number] {
 }
 
 #gravura1 input, #gravura2 input {
-    width:100%;
+    width:80%;
+    background-color:inherit;
+    border-bottom: 1px solid white;
+    color:white;
+    text-align: start;
+    padding-left: 5px;
 }
 #custom-select {
     display:flex;
@@ -858,7 +865,7 @@ input[type=number] {
 .support button {
     background: #E6E6E6;
     border: 1px solid black;
-    border-radius: 3px;
+    border-radius: 5px;
     cursor: pointer;
     padding:5px 10px;
     text-align: center;
@@ -1103,10 +1110,10 @@ footer h4 {
     .totalDrawer {
         font-size:1.4rem;
     }
-    .productDetailsDimension {
+    .productDetailsDimension, .singleItemDimension {
         width:140px;
     }
-    .productDetailsDimension {
+    .productDetailsDimension,.singleItemDimension {
         height:30px;
 
     }
@@ -1115,8 +1122,9 @@ footer h4 {
         font-size:1.2rem;
         padding-left: 13px;
         bottom:0;
+    
     }
-    .productDetailsDimension select option {
+    .productDetailsDimension select option,.singleItemDimension select option {
         font-size:0.7rem;
     }
     .cartDrawer .quantity {
@@ -1124,7 +1132,40 @@ footer h4 {
         height:28px;
         font-size:1.2rem;
     }
-        
+    
+    .singleItemMain {
+        display:flex;
+        justify-content: space-between;
+        margin:5% 0;
+    }
+    .singleItemMain .leftProduct {
+        font-size:1.3rem;
+    }
+
+    .singleItemDimension select{
+        width:90px;
+        font-size:1.2rem;
+        padding-left: 13px;
+        bottom:0;
+        padding-top:4px;
+    }
+
+    .firstSectionProdus{
+        margin-right: 5%;
+    }
+    .gravuraInputs input {
+        font-size:1.2rem;
+        padding-bottom: 2px;
+    }
+    .suport button,.greutate,.gravuraChoice button,.cartAdd {
+        font-size:1.3rem;
+    }
+    .lastSectionProdus h3{
+        font-size:2rem;
+    }
+    .lastSpan{
+        font-size:1.3rem;
+    }
     footer {
         height:220px;    
     }
@@ -1253,30 +1294,62 @@ footer h4 {
             padding:50px 0;
             font-size:calc(10px + 6 * ((100vw - 350px) / 500));
         }
-        .productDetailsDimension {
+        .productDetailsDimension, .singleItemDimension {
             width:150px;
-            margin:3% 0;
+            height:30px;
         }
         .productDetailsDimension {
-            height:35px;
-    
+            margin:3% 0;
         }
         .productDetailsDimension select{
             width:150px;
-            font-size:1.3rem;
+            font-size:1.2rem;
             padding-left: 15px;
             bottom:0;
         }
         .productDetailsDimension select option {
-            font-size:1.3rem;
-            
-       
+            font-size:1.2rem;
+
         }
         .cartDrawerPrice{
             font-size:1.2rem
         }
         .cartDimensiune{
             font-size:1.2rem
+        }
+        .singleItemMain {
+            width:70%;
+            display:flex;
+            justify-content: space-between;
+            margin:5% auto;
+        }
+        .singleItemMain .leftProduct {
+            font-size:1.3rem;
+        }
+    
+        .singleItemDimension select{
+            width:150px;
+            font-size:1.2rem;
+            padding-left: 13px;
+            bottom:0;
+            padding-top:4px;
+        }
+    
+        .firstSectionProdus{
+            margin-right: 5%;
+        }
+    
+        .suport button,.greutate,.gravuraChoice button,.cartAdd {
+            font-size:1.3rem;
+        }
+        .lastSectionProdus h3{
+            font-size:2rem;
+        }
+        .lastSpan{
+            font-size:1.3rem;
+        }
+        #custom-select button:nth-child(2){
+            border-radius: 0;
         }
         footer {
             height:250px;    

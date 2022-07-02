@@ -4,8 +4,7 @@ import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
 
 
 const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
-    
-      
+
     let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
     
