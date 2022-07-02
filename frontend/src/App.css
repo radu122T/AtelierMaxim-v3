@@ -426,11 +426,9 @@ nav .container ul {
 .productDetailsDimension,
 .productDetailsDimension * {
     display:flex;
-
     width:75px;
-    
     position: relative;
-    box-sizing: border-box;
+
 }
 .productDetailsDimension {
     background-color: #E6E6E6;
@@ -577,9 +575,11 @@ nav .container ul {
 }
 
 .cartProduct p {
-    padding-left:5px;
     width:95%;
     font-weight: 500;
+}
+.cartProductDescCant {
+    padding-left: 5%;
 }
 .cart-item {
     display:flex;
@@ -594,13 +594,13 @@ nav .container ul {
     border-top: 1px solid rgba(0, 0, 0, 0.123);
     padding-top:10px;
 }
-.cartDrawer .buttons input {
-    width:50px;
-    height:30px;
+.cartDrawer .quantity {
+    width:45px;
+    height:20px;
     border:none;
-    border:solid 1px black;
     text-align: center;
     font-size:0.9rem;
+    border:1px rgba(128, 128, 128, 0.445) solid
 }
 
 .cartDrawerPriceSpan {
@@ -669,6 +669,27 @@ input[type=number]::-webkit-inner-spin-button {
     outline: 0;
 }
 
+input[type=number] {
+    /*for absolutely positioning spinners*/
+    position: relative; 
+    padding: 5px;
+    padding-right: 25px;
+  }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
+  input[type=number]::-webkit-outer-spin-button, 
+  input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: inner-spin-button !important;
+    width: 20px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+  }
 /******************************************
 /* CartDrawer
 /*******************************************/
@@ -1082,7 +1103,51 @@ footer h4 {
     .totalDrawer {
         font-size:1.4rem;
     }
+    .productDetailsDimension {
+        width:140px;
+    }
+    .productDetailsDimension {
+        height:30px;
+
+    }
+    .productDetailsDimension select{
+        width:90px;
+        font-size:1.2rem;
+        padding-left: 13px;
+        bottom:0;
+    }
+    .productDetailsDimension select option {
+        font-size:0.7rem;
+    }
+    .cartDrawer .quantity {
+        width:55px;
+        height:28px;
+        font-size:1.2rem;
+    }
+        
+    footer {
+        height:220px;    
+    }
+    
+    footer h4 {
+        font-size:1.8rem;
+
+    }
+    
+    .footerOne {
+        font-size:1.3rem;
+    }
+    
+    .footerTwo {
+        font-size:1.5rem;
+    }
+    
+    .footerThree {
+        font-size:0.8rem;
+    }
 }
+
+
 @media only screen and (min-width: 1200px) {
         body{
             margin:0 6%;
@@ -1155,6 +1220,27 @@ footer h4 {
         .details {
             font-size:calc(12px + 6 * ((100vw - 320px) / 900))
         }
+
+        .cartDrawer {
+            width:450px;
+        }
+        .titleCartDrawer {
+            font-size:1.3rem;
+        }
+        .cart-item {
+            font-size:1.2rem;
+        }
+        .cartDrawerPriceSpan {
+            padding-right: 6px;
+        }
+        .totalDrawer {
+            font-size:1.4rem;
+        }
+        .cartDrawer .quantity {
+            width:55px;
+            height:28px;
+            font-size:1.2rem;
+        }
         .productButtons button {
             height:45px;
             font-size:calc(10px + 6 * ((100vw - 320px) / 900));
@@ -1167,7 +1253,31 @@ footer h4 {
             padding:50px 0;
             font-size:calc(10px + 6 * ((100vw - 350px) / 500));
         }
-
+        .productDetailsDimension {
+            width:150px;
+            margin:3% 0;
+        }
+        .productDetailsDimension {
+            height:35px;
+    
+        }
+        .productDetailsDimension select{
+            width:150px;
+            font-size:1.3rem;
+            padding-left: 15px;
+            bottom:0;
+        }
+        .productDetailsDimension select option {
+            font-size:1.3rem;
+            
+       
+        }
+        .cartDrawerPrice{
+            font-size:1.2rem
+        }
+        .cartDimensiune{
+            font-size:1.2rem
+        }
         footer {
             height:250px;    
         }
@@ -1175,24 +1285,21 @@ footer h4 {
         
         footer h4 {
             font-weight:800;
-            font-size:2rem;
-            text-align: center;
+            font-size:2.2rem;
         }
         
         .footerOne {
-            text-align: center;
             font-weight: 500;
-            font-size:1.5rem;
+            font-size:1.7rem;
         }
         
         .footerTwo {
-            text-align:center;
+
             font-size:1.7rem;
         }
         
         .footerThree {
             margin-top:3%;
-            text-align: center;
             font-size:1rem;
         }
         

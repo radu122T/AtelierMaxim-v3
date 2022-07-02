@@ -33,7 +33,7 @@ const Product = ({cart,productData ,addToCart, loadCurrentItem,addDimension,addS
 
     const drawer = ()=> {addToCart(productData.id)
         addDimension(productData.id,dimension)
-        addSuport(productData.id,supportButton)
+        // addSuport(productData.id,supportButton)
         const containerDrawer = document.querySelector(".drawerContainer")
         cartDrawer.style.display="flex"
         if (cartDrawer.style.display="flex")

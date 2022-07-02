@@ -2,8 +2,10 @@ import React, {useState,useEffect} from "react"
 import {connect} from 'react-redux'
 import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
 
-const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
 
+const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
+    
+      
     let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
     
@@ -23,9 +25,10 @@ const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
                     <p>{item.desc}</p>
                     <div className="buttons">
                 <div className="quantityCartDrawer">
-                <label htmlFor="qty"></label>
-                    <input className="drawerInput"
+                
+                    <input className="drawerInput quantity"
                         min="1"
+                        max="100"
                         type="number"
                         id="qty"
                         name="qty"
@@ -33,6 +36,7 @@ const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
                         onChange={onChangeHandler}
                     />
                 </div>
+
             </div>
                 </div>
                 
