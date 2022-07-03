@@ -3,7 +3,7 @@ import {connect} from 'react-redux'
 import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
 
 
-const CartItem = ({item, removeFromCart, adjustQty ,cart}) => {
+const CartItemForCart = ({item, removeFromCart, adjustQty ,cart}) => {
 
     let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
@@ -83,4 +83,4 @@ const mapStateToProps = state => {
         
     }
 }
-export default connect(mapStateToProps, mapDispatchToProps)(CartItem)
+export default connect(mapStateToProps, mapDispatchToProps)(CartItemForCart)

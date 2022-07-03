@@ -1,5 +1,5 @@
 import React, { useEffect,useState } from "react"
-import CartItem from "../cartComponents/CartItem"
+import CartItemForDrawer from "../cartComponents/CartItemForDrawer"
 import { connect } from "react-redux"
 import closeDrawer from "../CloseDrawer"
 import { Link } from "react-router-dom"
@@ -42,7 +42,7 @@ const CartDrawer = ({cart}) => {
                 {cart.length>0 && <main>
                     <div className="shopping-cart" id="shopping-cart">
                     {cart.map((item) => (
-                        <CartItem key={item.key}  item={item} />
+                        <CartItemForDrawer key={item.key}  item={item} />
                     ))}
                     </div>
                 </main>}

@@ -1,5 +1,5 @@
 import React, { useEffect,useState } from "react"
-import CartItem from "../components/cartComponents/CartItem"
+import CartItemForCart from "../components/cartComponents/CartItemForCart"
 import Footer from "./../components/Footer"
 import { connect } from "react-redux"
 import Nav from "../components/Nav"
@@ -20,17 +20,25 @@ const Cart = ({ cart }) => {
         setTotalItems(items)
     }, [cart,totalPrice, totalItems, setTotalPrice, setTotalItems])
     return (
-        <div>
+        <div className="cartContainer">
             <Nav/>
-            <main>
-		    	<div className="shopping-cart" id="shopping-cart">
-                    {cart.map((item) => (
-                        <CartItem key={item.id} item={item} />
-                    ))}
-                </div>
-                <span>Total: ({totalItems} produse</span>
-                <span>{totalPrice} lei</span>
-		    </main>
+                <header className="headerCart">
+                    {totalItems === 0 && <h2 className="emptyCart">Cosul este gol</h2>}
+                    {totalItems != 0 && <h2 className="cartTitle">Cosul dumneavoastra</h2>}
+                </header>
+                <main className="mainCart">
+		        	<div className="shopping-cart" id="shopping-cart">
+                        {cart.map((item) => (
+                            <CartItemForCart key={item.id} item={item} />
+                        ))}
+                    </div>
+                        
+                    <div className="totalCart">
+                    {cart.length>0 && <span>Total: {totalItems} produse</span>}
+                    {cart.length>0 && <span>Pret: {totalPrice} lei</span>}
+                    </div>
+                        
+		        </main>
             <Footer />
         </div>
     )}

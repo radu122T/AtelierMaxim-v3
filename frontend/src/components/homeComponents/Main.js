@@ -5,7 +5,7 @@ import { connect } from 'react-redux'
 
 const Main = ({products})=> {
     return (
-        <main>
+        <main className='mainHomeScreen'>
             <section className="shop" id="shop">
                 {products.map((prod)=> (
                     <Product key={prod.key} productData={prod} />
