@@ -7,7 +7,7 @@ let shopItemsData = [
       name: "Copacul",
       price: 45,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "public/images/produs1.png",
       greutate: "0.43",
       dimension:"",
       support: "",
