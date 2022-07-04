@@ -16,7 +16,9 @@
     "react-toastify": "^9.0.5",
     "scheduler": "^0.23.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "webpack-cli": "^4.10.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server/server.js",
