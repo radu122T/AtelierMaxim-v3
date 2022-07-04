@@ -6,7 +6,7 @@ import Footer from "../components/Footer"
 import Proiect from "../components/homeComponents/Project"
 import {ToastContainer, toast, Zoom, Bounce,Flip} from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
-
+import { Link } from "react-router-dom"
 
 const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,addGravura2}) => {
     
@@ -94,7 +94,9 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
     return (
         <div className="singleItemContainer">
             <Nav/>
-            
+            <Link to="/">
+                <div className="backSingleItem"><i className="fa-solid fa-arrow-left"></i> Inapoi</div>
+            </Link>
             <main className='singleItemMain'>
             <section className="firstSectionProdus">
                 <img src={currentItem.img} alt=""/>

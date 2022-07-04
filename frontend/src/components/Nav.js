@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { connect } from "react-redux"
 import LogoImg from "../../public/images/logoAlb.svg"
 const Nav = ({ cart }) => {
-
+	const [mail,setMail] = useState(false)
 	const [cartCount, setCartCount]= useState(0)
 	useEffect(()=> {
 		let count =0
@@ -12,13 +12,18 @@ const Nav = ({ cart }) => {
 		})
 		setCartCount(count)
 	},[cart, cartCount])
-
+	const openMail = ()=> {
+		setMail(prev=>!prev)
+	}
     return (
         <nav>
 			<div className="container">
 				<ul>
 					<li className="menu">
-						<a href=""><i className="fa-solid fa-bars"></i></a>
+						<i className="fa-solid fa-bars" onClick={openMail}></i>
+						{mail && <div className="mailMenu">
+							<a href="mailto:comenzi@atelierulmaxim.ro"> comenzi@atelierulmaxim.ro</a>
+						</div>}
 					</li>
 					
 					<li className="leftSide">
