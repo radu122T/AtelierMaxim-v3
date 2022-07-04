@@ -1,9 +1,9 @@
 import React, {useState,useEffect} from "react"
 import {connect} from 'react-redux'
-import {removeFromCart, adjustQty} from '../../redux/Shopping/shopping-actions'
+import {adjustQty, removeFromCart} from '../../redux/Shopping/shopping-actions'
 
 
-const CartItemForCart = ({item, removeFromCart, adjustQty ,cart}) => {
+const CartItemForCart = ({item, adjustQty, removeFromCart ,cart}) => {
 
     let it = cart.find((prod)=> prod.id ===item.id)
     const [input, setInput] = useState(item.qty)
@@ -15,17 +15,16 @@ const CartItemForCart = ({item, removeFromCart, adjustQty ,cart}) => {
     useEffect(()=>setInput(it.qty),[it.qty])
 
     return (
-        <div className="cart-item" id = {item.id}>
-            <div className="cartProduct">
-                <div className="cartProductImg">
-                    <img src={item.img} alt="" />
-                </div>
-                <div className="cartProductDescCant">
-                    <p>{item.desc}</p>
-                    <div className="buttons">
-                <div className="quantityCartDrawer">
-                
-                    <input className="drawerInput quantity"
+        <div className="cartItemCartPage" id = {item.id}>
+            
+            <div className="cartImg">
+                <img src={item.img} alt="" />
+            </div>
+            <div className="cartDesc">
+                <p className="descP">{item.desc}</p>
+                <div className="quantityCartPage">
+                    <label>Cantitate: </label>
+                    <input className="drawerInputCartPage quantityCartPage"
                         min="1"
                         max="100"
                         type="number"
@@ -35,37 +34,31 @@ const CartItemForCart = ({item, removeFromCart, adjustQty ,cart}) => {
                         onChange={onChangeHandler}
                     />
                 </div>
-
-            </div>
-                </div>
-                
-            </div>
-            {(item.gravura1 || item.gravura2) && <div className="cartInputs">
-                {item.gravura1 && <div className="cartInput1">
+                {(item.gravura1 || item.gravura2) && <div className="cartInputsCartPage">
+                {item.gravura1 && <div className="cartInput1CartPage">
                     <p>Gravura copac: {item.gravura1}</p>
                 </div>}
-                {item.gravura2 && <div className="cartInput2">
+                {item.gravura2 && <div className="cartInput2CartPage">
                     <p>Gravura suport: {item.gravura2}</p>
                 </div>}
             </div>}
-            {(item.dimension || item.support) && <div className="cartSuportDimensiuni">
-                {item.dimension && <div className="cartDimensiune">
+            {(item.dimension || item.support) && <div className="cartSuportDimensiuniCartPage">
+                {item.dimension && <div className="cartDimensiuneCartPage">
                     <p>Dimensiune: {item.dimension}</p>
                 </div>}
-                {item.support && <div className="cartSupport">
+                {item.support && <div className="cartSupportCartPage">
                     <p>Suport: {item.support}</p>
                 </div>}
             </div>}
             
-            <div className="details">
-                <div className="cartDrawerPrice">
-                    <p><span className="cartDrawerPriceSpan">{input} x</span>{item.price} lei</p>
-                </div>
             </div>
 
-            
-
-            <i onClick= {() => removeFromCart(item.id)} className="xInDrawer fa-solid fa-xmark"></i>
+            <div className="detailsCartPage">
+                <div className="cartPagePrice">
+                    <p><span className="cartPagePriceSpan">{input}x </span> <span className="priceCartPage">{item.price} lei</span></p>
+                </div>
+            </div>
+            <i onClick= {() => removeFromCart(item.id)} className="xInCart fa-solid fa-xmark"></i>
         </div>
     )
 }
@@ -74,7 +67,6 @@ const mapDispatchToProps = dispatch => {
     return {
         removeFromCart: (id) => dispatch(removeFromCart(id)) ,
         adjustQty: (id, value) => dispatch(adjustQty(id,value)),
-        addToCart: (id) => dispatch(addToCart(id)),
     }
 }
 const mapStateToProps = state => {

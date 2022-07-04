@@ -584,7 +584,7 @@ nav .container ul {
 .cart-item {
     display:flex;
     justify-content: space-between;
-    margin-bottom:10%;
+    margin-bottom:5%;
     flex-direction: column;
     border-bottom: 1px solid rgba(0, 0, 0, 0.123);
     padding-bottom:10px;
@@ -718,12 +718,13 @@ input[type=number]::-webkit-inner-spin-button {
     display:flex;
     flex-direction: column;
     height: 100vh;
-    
 }
 
 .headerCart  {
+    display:flex;
     margin:5%;
-    text-align: center;
+    justify-content: center;
+    align-items:center ;
     font-size:1.2rem;
     height: fit-content;
 }
@@ -737,8 +738,132 @@ input[type=number]::-webkit-inner-spin-button {
 
 .emptyCart {
     text-align: center;
-    padding-top: 20px;
     font-size:1.2rem;
+}
+
+.cartItemCartPage {
+    display:flex;
+    flex-direction: column;
+    border:1px solid white;
+    padding:5%;
+    border-radius: 10px;
+    margin-bottom: 25px;
+}
+.xInCart {
+    order:-1;
+    text-align: end;
+    padding-bottom: 10px;
+    margin-top:-5px;
+    font-size:1rem;
+}
+.cartImg img{
+    display:block;
+    width:100%;
+    height:auto;
+    object-fit:cover;
+    object-position:center;
+    padding-bottom: 10px;
+}
+
+.quantityCartPage {
+    width:50px;
+    display:flex;
+    align-items: center;
+}
+.descP {
+    font-weight: 600;
+}
+.quantityCartPage input[type=number] {
+    padding-block:2px;
+    text-align: center;
+    height:19px;
+    margin-left:5px;
+}
+
+.cartPagePriceSpan {
+    color:lightgrey;
+    font-size:0.9rem
+}
+.priceCartPage {
+    color:#f86837;
+    font-size:1.1rem;
+}
+.detailsCartPage {
+    display:flex;
+    justify-content: end;
+}
+.shipping {
+    margin:0 5%;
+    border:1px solid white;
+    padding:5%;
+    border-radius: 10px;
+}
+
+.shipping h2:first-child{
+    text-align: center;
+    text-transform: uppercase;
+    font-size:1.1rem;
+    font-weight:600;
+}
+.personalInfo h2 {
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.personalInfo span {
+    display:block;
+    text-transform: uppercase;
+    margin-top:10px;
+    
+}
+.personalInfo input {
+    all:unset;
+    width: 95%;
+    height: 23px;
+    background-color: rgb(240, 243, 247);
+    color:black;
+    padding-left:10px;
+    font-size:0.8rem;
+}
+
+.payment {
+    margin:5% 5%;
+    border:1px solid white;
+    padding:5%;
+    border-radius: 10px;
+}
+
+.facturare {
+    margin-top:10px;
+    
+}
+.payment h2 {
+    text-align: center;
+    text-transform: uppercase;
+    font-size:1.1rem;
+    font-weight:600;
+}
+
+.totalCart {
+    text-align: center;
+    margin-block:25px;
+    font-size:1.2rem;
+}
+.paymentButton {
+    display:flex;
+    justify-content: center;
+    margin-bottom:25px;
+}
+.checkout {
+    background-color:#ee693d;
+    outline:0;
+    border:0;
+    width:160px;
+    color:rgba(255, 255, 255, 0.863);
+    height:35px;
+    border-radius:5px;
+    font-size:1.1rem;
+    font-weight: 600;
 }
 /******************************************
 /* CART
@@ -1185,7 +1310,10 @@ footer h4 {
         bottom:0;
         padding-top:4px;
     }
-
+    .buttonCartDrawer {
+        height:50px;
+        font-size:1.4rem;
+    }
     .firstSectionProdus{
         margin-right: 5%;
     }
@@ -1202,6 +1330,50 @@ footer h4 {
     .lastSpan{
         font-size:1.3rem;
     }
+    .cartItemCartPage{
+        display:flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .cartImg {
+        width:50%
+    }
+    .detailsCartPage {
+        width:18%
+    }
+    .descP {
+        padding-bottom:10px;;
+    }
+    .cartDesc {
+        padding-left:2%;
+        font-size:calc(16px + 6 * ((100vw - 500px) / 600))
+    }
+    .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {
+        font-size:calc(16px + 6 * ((100vw - 500px) / 600))
+    }
+
+    
+    .headerCart {
+        font-size:calc(25px + 6 * ((100vw - 500px) / 600));
+        font-weight:500;
+    }
+    .personInfo input {
+        height:25px;
+    }
+    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout {
+        font-size:calc(18px + 6 * ((100vw - 500px) / 600))
+
+    }
+    .xInCart {
+        order:1;
+        align-self:start;
+    }
+    .checkout{
+        width:200px;
+        height:45px;
+    }
+
     footer {
         height:220px;  
     }
@@ -1346,6 +1518,10 @@ footer h4 {
         .productDetailsDimension select option {
             font-size:1.2rem;
 
+        }
+        .buttonCartDrawer {
+            height:50px;
+            font-size:1.4rem;
         }
         .cartDrawerPrice{
             font-size:1.2rem
