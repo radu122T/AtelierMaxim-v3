@@ -94,9 +94,11 @@ const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,ad
     return (
         <div className="singleItemContainer">
             <Nav/>
-            <Link to="/">
-                <div className="backSingleItem"><i className="fa-solid fa-arrow-left"></i> Inapoi</div>
-            </Link>
+            <div className="backSingleItem">
+                <Link to="/">
+                    <div className="backSingleItem"><i className="fa-solid fa-arrow-left"></i> Inapoi</div>
+                </Link>
+            </div>
             <main className='singleItemMain'>
             <section className="firstSectionProdus">
                 <img src={currentItem.img} alt=""/>

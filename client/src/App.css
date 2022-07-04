@@ -784,9 +784,11 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 .backCart {
+    width:fit-content;
     margin:1% 5% 0;
     font-size: 0.9rem;
     cursor:pointer;
+    white-space: nowrap;
 }
 
 .quantityCartPage input[type=number] {
@@ -939,7 +941,7 @@ input[type=number]::-webkit-inner-spin-button {
 
 .secondSectionProdus h1 {
     text-align: center;
-    font-size:2rem;
+    font-size:1.7rem;
     font-weight: 700;
     margin-bottom: 50px;
 }
@@ -972,7 +974,7 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 .greutate {
-    font-size: 0.93rem;
+    font-size: 0.8rem;
     font-weight: 400;
 }
 #gravura1,#gravura2 {
@@ -1166,6 +1168,8 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 .backSingleItem {
+    white-space: nowrap;
+    width:fit-content;
     margin:1% 5%;
 }
 /******************************************
@@ -1351,7 +1355,7 @@ footer h4 {
         
     }
     .singleItemMain .leftProduct {
-        font-size:1.3rem;
+        font-size:1.2rem;
     }
 
     .singleItemDimension select{
@@ -1373,7 +1377,7 @@ footer h4 {
         padding-bottom: 2px;
     }
     .suport button,.greutate,.gravuraChoice button,.cartAdd {
-        font-size:1.3rem;
+        font-size:1.2rem;
     }
 
     .lastSpan{
@@ -1392,7 +1396,7 @@ footer h4 {
         width:18%
     }
     .descP {
-        padding-bottom:10px;;
+        padding-bottom:10px;
     }
     .cartDesc {
         padding-left:2%;
@@ -1422,6 +1426,8 @@ footer h4 {
         align-self:start;
     }
     .backCart,.backSingleItem {
+        white-space: nowrap;
+        width:fit-content;
         font-size:1.1rem;
     }
     .checkout{
@@ -1469,30 +1475,30 @@ footer h4 {
             margin:0;
         }
         .logo img{
-            width:80px;
+            width:60px;
         }
         .rightSide {
-            font-size:1.5rem;
+            font-size:1.2rem;
         }
         .menu {
-            font-size:1.5rem;
+            font-size:1.2rem;
             display:flex;
             align-items: center;
             display:none;
         }
         .leftSide {
             display:flex;
-            font-size:1.5rem;
+            font-size:1.2rem;
             align-items: center;
         }
         header {
             height:90vh
         }
         .headerhomeScreen .firstSection {
-            top:12%;
+            top:10%;
         }
         .headerhomeScreen .firstSection img {
-            width:550px;
+            width:400px;
         }
         header .secondSection {
             left:15%;
@@ -1500,7 +1506,7 @@ footer h4 {
             
         }
         header .secondSection h1 {
-            font-size:calc(60px + 6 * ((100vw - 500px) / 600))
+            font-size:calc(50px + 6 * ((100vw - 500px) / 600))
         }
 
         .headerhomeScreen .secondSection {
@@ -1508,12 +1514,12 @@ footer h4 {
         }
         .veziProduseleSpan {
             height:55px;
-            font-size:2rem;
+            font-size:1.7rem;
             padding-top:3px;
             width:55%;
         }
         .headerhomeScreen .lastSection {
-            font-size:1.7rem;
+            font-size:1.5rem;
         }
         .inter {
             margin-bottom: 55px;
@@ -1531,11 +1537,11 @@ footer h4 {
             border-radius: 10px;
         }
         .details {
-            font-size:calc(12px + 6 * ((100vw - 320px) / 900))
+            font-size:calc(10px + 6 * ((100vw - 320px) / 900))
         }
 
         .cartDrawer {
-            width:450px;
+            width:400px;
         }
         .titleCartDrawer {
             font-size:1.3rem;
@@ -1556,7 +1562,7 @@ footer h4 {
         }
         .productButtons button {
             height:45px;
-            font-size:calc(10px + 6 * ((100vw - 320px) / 900));
+            font-size:calc(9px + 6 * ((100vw - 320px) / 900));
             border-radius: 8px;
         }
         .project {
@@ -1610,16 +1616,19 @@ footer h4 {
             bottom:0;
             padding-top:4px;
         }
-
+        .secondSectionProdus {
+            width:60%
+        }
+        
         .firstSectionProdus{
             margin-right: 5%;
         }
     
         .suport button,.greutate,.gravuraChoice button,.cartAdd {
-            font-size:1.3rem;
+            font-size:1.2rem;
         }
         .lastSectionProdus h3{
-            font-size:2rem;
+            font-size:1.7rem;
         }
         .lastSpan{
             font-size:1.3rem;
@@ -1629,13 +1638,16 @@ footer h4 {
         }
 
         .backSingleItem{
+            width:fit-content;
             margin-top:13px;
-            font-size:1.4rem;
+            font-size:1.2rem;
             margin-left:20px;
+            white-space: nowrap;
         }
         .backCart {
+            width:fit-content;
             margin-top:13px;
-            font-size:1.4rem;
+            font-size:1.2rem;
             margin-left:20px;
         }
         .cartImg {
@@ -1646,7 +1658,9 @@ footer h4 {
             flex-direction: row;
             align-items: center;
         }
-    
+        #gravura1 input, #gravura2 input {
+            font-size:1.2rem;
+        }
         .detailsCartPage {
             width:18%
         }
@@ -1655,26 +1669,26 @@ footer h4 {
         }
         .cartDesc {
             padding-left:2%;
-            font-size:calc(12px + 6 * ((100vw - 500px) / 600))
+            font-size:calc(10px + 6 * ((100vw - 500px) / 600))
         }
         .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {
-            font-size:calc(12px + 6 * ((100vw - 500px) / 800))
+            font-size:calc(10px + 6 * ((100vw - 500px) / 800))
         }
     
         
         .headerCart,.emptyCart  {
-            font-size:calc(25px + 6 * ((100vw - 500px) / 800));
+            font-size:calc(20px + 6 * ((100vw - 500px) / 800));
             font-weight:500;
         }
         .personInfo input {
             height:25px;
         }
         .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {
-            font-size:calc(14px + 6 * ((100vw - 500px) / 800))
+            font-size:calc(12px + 6 * ((100vw - 500px) / 800))
     
         }
         .totalCart h3 {
-            font-size:calc(22px + 6 * ((100vw - 500px) / 800));
+            font-size:calc(16px + 6 * ((100vw - 500px) / 800));
             font-weight:500
         }
         .totalCart {
@@ -1717,7 +1731,7 @@ footer h4 {
             margin:5% 0;
         }
         .quantityCartPage input[type=number] {
-            font-size: 1.1rem;
+            font-size: 1rem;
             height:25px;
         }
         .quantityCartPage {

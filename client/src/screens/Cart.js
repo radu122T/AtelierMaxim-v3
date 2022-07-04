@@ -30,9 +30,11 @@ const Cart = ({ cart }) => {
             <div className="cartContainer">
         
             <Nav/>
-                <Link to="/">
-                    <div className="backCart"><i className="fa-solid fa-arrow-left"></i> Inapoi</div>
-                </Link>
+                <div className="backCart">
+                    <Link to="/">
+                        <div className="backCart"><i className="fa-solid fa-arrow-left"></i> Inapoi</div>
+                    </Link>
+                </div>
                 <header className="headerCart">
                     {totalItems === 0 && <h2 className="emptyCart">Cosul este gol</h2>}
                     {totalItems != 0 && <h2 className="cartTitle">Cosul dumneavoastra</h2>}
