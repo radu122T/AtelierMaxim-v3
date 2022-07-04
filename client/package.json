@@ -1,7 +1,6 @@
 {
-  "name": "shoeshop",
+  "name": "ateliermaxim",
   "version": "0.1.0",
-  "proxy":"https://ateliermaxim.herokuapp.com/",
   "private": true,
   "scripts": {
     "build": "webpack",
