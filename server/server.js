@@ -1,13 +1,17 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
+const path=require("path")
+const express =require('express')
+const app = express()
+const publicPath = path.join(__dirname, "..","frontend", 'dist')
+const publicPath2 = path.join(__dirname, "..","frontend", 'public')
+const port = process.env.PORT || 3000
 
-dotenv.config();
-const app = express();
-app.use(express.json());
-app.use(cors())
-app.use(express.static('public'))
+app.use(express.static(publicPath))
+app.use(express.static(publicPath2))
+app.get("*", (req,res) => {
+    res.sendFile(path.join(publicPath, 'index.html'))
+})
 
-const PORT = process.env.PORT || 1000;
 
-app.listen(PORT, console.log(`server run in port ${PORT}`));
+app.listen(port, () => {
+    console.log('server is up')
+})
