@@ -1,6 +1,9 @@
 {
   "name": "atelier-maxim-3.0",
   "version": "1.0.0",
+  "engines": {
+    "node": "16.15.1"
+  },
   "description": "",
   "main": "index.js",
   "dependencies": {
