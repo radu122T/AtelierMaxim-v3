@@ -1,5 +1,5 @@
 const path=require("path")
-const express =require('express')
+const express =require("express")
 const app = express()
 const publicPath = path.join(__dirname, "..","client", 'dist')
 const publicPath2 = path.join(__dirname, "..","client", 'public')
