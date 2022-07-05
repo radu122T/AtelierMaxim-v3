@@ -1552,18 +1552,19 @@ footer h4 {
             font-size:1.3rem;
         }
         .cart-item {
-            font-size:1.2rem;
+            font-size:1.1rem;
         }
         .cartDrawerPriceSpan {
             padding-right: 6px;
         }
         .totalDrawer {
-            font-size:1.4rem;
+            font-size:1.3rem;
         }
         .cartDrawer .quantity {
             width:55px;
             height:28px;
-            font-size:1.2rem;
+            font-size:1rem;
+            
         }
         .productButtons button {
             height:45px;
@@ -1594,11 +1595,9 @@ footer h4 {
             font-size:1.4rem;
         }
         .cartDrawerPrice{
-            font-size:1.2rem
+            font-size:1.1rem
         }
-        .cartDimensiune{
-            font-size:1.2rem
-        }
+      
         .singleItemMain {
             width:70%;
             display:flex;

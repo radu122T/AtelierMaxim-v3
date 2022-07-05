@@ -3847,7 +3847,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 var Cart = function Cart(_ref) {
   var cart = _ref.cart;
-  window.scrollTo(0, 0);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    window.scrollTo(0, 0);
+  }, []);
 
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
       _useState2 = _slicedToArray(_useState, 2),
