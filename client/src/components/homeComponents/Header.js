@@ -1,11 +1,11 @@
 import React from 'react'
-import pic from "./../../images/HeaderPic2.png";
+
 const Header = ()=> {
 
     return (
         <header className='headerhomeScreen'> 
 			<section className="firstSection">
-				<img src={pic} alt=""/>
+				<img src="https://res.cloudinary.com/radu122/image/upload/v1657029586/ateliermaxim/HeaderPic2_waypwl.png" alt=""/>
 			</section>
 			<section className="secondSection">
 				<h1>Decoratiuni <br/> din lemn</h1>
