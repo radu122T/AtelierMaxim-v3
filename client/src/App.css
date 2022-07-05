@@ -1255,9 +1255,13 @@ footer h4 {
         font-size:1.3rem;
     }
     .menu {
+        
         font-size:1.3rem;
         display:flex;
         align-items: center;
+    }
+    .fa-bars {
+        cursor:pointer;
     }
     .mailMenu {
         top:80px;
@@ -1279,7 +1283,7 @@ footer h4 {
         
     }
     header .secondSection h1 {
-        font-size:3.1rem;
+        font-size:2.8rem;
     }
     .veziProduseleSpan {
         height:45px;
@@ -1288,10 +1292,10 @@ footer h4 {
         width:65%;
     }
     .inter {
-        margin-bottom: 20px;;
+        margin-bottom: 20px;
     }
     .headerhomeScreen .lastSection {
-        font-size:1.5rem;
+        font-size:1.3rem;
     }
     .shop {
         display:grid;
@@ -1308,33 +1312,36 @@ footer h4 {
     }
     
     .project {
-        font-size:calc(10px + 6 * ((100vw - 330px) / 300));
+        font-size:calc(8px + 6 * ((100vw - 330px) / 300));
     }
     .cartDrawer {
-        width:450px;
+        width:400px;
     }
     .titleCartDrawer {
         font-size:1.3rem;
     }
     .cart-item {
-        font-size:1.3rem;
+        font-size:1.2rem;
     }
     .cartDrawerPriceSpan {
         padding-right: 6px;
     }
     .totalDrawer {
-        font-size:1.4rem;
+        font-size:1.3rem;
     }
     .productDetailsDimension, .singleItemDimension {
-        width:140px;
+        width:120px;
     }
     .productDetailsDimension,.singleItemDimension {
-        height:30px;
-
+        height:25px;
+    
+    }
+    .item>div {
+        font-size: calc(6px + 6 * ((100vw - 320px) / 300))
     }
     .productDetailsDimension select{
         width:90px;
-        font-size:1.2rem;
+        font-size:1.1rem;
         padding-left: 13px;
         bottom:0;
     
@@ -1345,7 +1352,7 @@ footer h4 {
     .cartDrawer .quantity {
         width:55px;
         height:28px;
-        font-size:1.2rem;
+        font-size:1.1rem;
     }
     
     .singleItemMain {

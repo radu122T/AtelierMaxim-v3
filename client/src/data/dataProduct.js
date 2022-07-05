@@ -1,3 +1,6 @@
+import axios from "axios"
+
+
 let shopItemsData = [
     {
       key:"1",
@@ -7,7 +10,7 @@ let shopItemsData = [
       name: "Copacul",
       price: 45,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.43",
       dimension:"",
       support: "",
@@ -22,7 +25,7 @@ let shopItemsData = [
       name: "Office Shirt",
       price: 100,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.45",
       dimension:"",
       support: "",
@@ -37,7 +40,7 @@ let shopItemsData = [
       name: "T Shirt",
       price: 25,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.12",
       dimension:"",
       support: "",
@@ -52,7 +55,7 @@ let shopItemsData = [
       name: "Mens Suit",
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.53",
       dimension:"",
       support: "",
@@ -67,7 +70,7 @@ let shopItemsData = [
       name: "Mens Suit",
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.25",
       dimension:"",
       support: "",
@@ -82,7 +85,7 @@ let shopItemsData = [
       name: "Mens Suit",
       price: 300,
       desc: "Lorem ipsum dolor sit amet consectetur",
-      img: "images/produs1.png",
+      img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
       greutate: "0.44",
       dimension:"none",
       support: "",

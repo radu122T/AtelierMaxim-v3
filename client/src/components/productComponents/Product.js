@@ -2,10 +2,11 @@ import React, {useState} from "react"
 import { Link } from "react-router-dom"
 import { connect } from "react-redux"
 import { addToCart, loadCurrentItem,addDimension,addSuport } from "../../redux/Shopping/shopping-actions"
-
+import axios from "axios"
 
 const Product = ({productData ,addToCart, loadCurrentItem,addDimension})=> {
     const [dimension, setDimension] = useState("16x16cm")
+    const[images,setImages] = useState("")
     // const [supportButton,setSupportButton] = useState("Da")
     // const [highlight1, setHighlight1] = useState(false)
     // const [highlight2, setHighlight2] = useState(false)
