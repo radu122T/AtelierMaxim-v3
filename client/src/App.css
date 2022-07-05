@@ -328,7 +328,7 @@ nav .container ul {
 
 
 .inter h2:hover {
-    cursor: pointer;
+    cursor:default;
 }
 
 .inter h2:after {
@@ -431,6 +431,7 @@ nav .container ul {
 .productDetailsDimensionContainer{
     display:flex;
     justify-content: center;
+    margin:0;
 } 
 .productDetailsDimension,
 .productDetailsDimension * {
@@ -1249,14 +1250,14 @@ footer h4 {
         margin:0;
     }
     .logo img{
-        width:65px;
+        width:50px;
     }
     .rightSide {
-        font-size:1.3rem;
+        font-size:1.1rem;
     }
     .menu {
         
-        font-size:1.3rem;
+        font-size:1.1rem;
         display:flex;
         align-items: center;
     }
@@ -1295,7 +1296,7 @@ footer h4 {
         margin-bottom: 20px;
     }
     .headerhomeScreen .lastSection {
-        font-size:1.3rem;
+        font-size:1.2rem;
     }
     .shop {
         display:grid;
@@ -1311,7 +1312,7 @@ footer h4 {
         border-radius: 8px;
     }
     
-    .project {
+    .project, .inter {
         font-size:calc(8px + 6 * ((100vw - 330px) / 300));
     }
     .cartDrawer {
@@ -1332,22 +1333,23 @@ footer h4 {
     .productDetailsDimension, .singleItemDimension {
         width:120px;
     }
-    .productDetailsDimension,.singleItemDimension {
+    .productDetailsDimension, .singleItemDimension {
         height:25px;
     
     }
-    .item>div {
-        font-size: calc(6px + 6 * ((100vw - 320px) / 300))
+    .item>div,.productDetailsDimension select,.productDetailsDimension select option,.singleItemDimension select option,.singleItemDimension select, .suport button,.greutate,.gravuraChoice button,.cartAdd {
+        font-size: calc(6px + 6 * ((100vw - 320px) / 400))
+    }
+
+    .singleItemMain .leftProduct{
+        font-size: calc(8px + 6 * ((100vw - 320px) / 400))
     }
     .productDetailsDimension select{
+        
         width:90px;
-        font-size:1.1rem;
         padding-left: 13px;
         bottom:0;
     
-    }
-    .productDetailsDimension select option,.singleItemDimension select option {
-        font-size:0.7rem;
     }
     .cartDrawer .quantity {
         width:55px;
@@ -1361,16 +1363,16 @@ footer h4 {
         margin:1% 0 5%;
         
     }
-    .singleItemMain .leftProduct {
-        font-size:1.2rem;
-    }
 
     .singleItemDimension select{
         width:90px;
-        font-size:1.2rem;
         padding-left: 13px;
         bottom:0;
-        padding-top:4px;
+
+    }
+
+    .secondSectionProdus {
+        min-width:60%;
     }
     .buttonCartDrawer {
         height:50px;
@@ -1383,10 +1385,6 @@ footer h4 {
         font-size:1.2rem;
         padding-bottom: 2px;
     }
-    .suport button,.greutate,.gravuraChoice button,.cartAdd {
-        font-size:1.2rem;
-    }
-
     .lastSpan{
         font-size:1.3rem;
     }
@@ -1407,22 +1405,22 @@ footer h4 {
     }
     .cartDesc {
         padding-left:2%;
-        font-size:calc(16px + 6 * ((100vw - 500px) / 600))
+        font-size:calc(14px + 6 * ((100vw - 500px) / 600))
     }
     .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {
-        font-size:calc(16px + 6 * ((100vw - 500px) / 600))
+        font-size:calc(14px + 6 * ((100vw - 500px) / 600))
     }
 
     
     .headerCart,.emptyCart  {
-        font-size:calc(25px + 6 * ((100vw - 500px) / 600));
+        font-size:calc(20px + 6 * ((100vw - 500px) / 600));
         font-weight:500;
     }
     .personInfo input {
         height:25px;
     }
-    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {
-        font-size:calc(18px + 6 * ((100vw - 500px) / 600))
+    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span,.secondSectionProdus h1, .lastSectionProdus h3  {
+        font-size:calc(16px + 6 * ((100vw - 500px) / 600))
 
     }
     .totalCart h3 {
@@ -1588,13 +1586,8 @@ footer h4 {
         }
         .productDetailsDimension select{
             width:150px;
-            font-size:1.2rem;
             padding-left: 15px;
             bottom:0;
-        }
-        .productDetailsDimension select option {
-            font-size:1.2rem;
-
         }
         .buttonCartDrawer {
             height:50px;
@@ -1624,7 +1617,8 @@ footer h4 {
             padding-top:4px;
         }
         .secondSectionProdus {
-            width:60%
+            width:60%;
+            min-width:50%;
         }
         
         .firstSectionProdus{
@@ -1678,7 +1672,7 @@ footer h4 {
             padding-left:2%;
             font-size:calc(10px + 6 * ((100vw - 500px) / 600))
         }
-        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {
+        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li, .productDetailsDimension select, .productDetailsDimension select option {
             font-size:calc(10px + 6 * ((100vw - 500px) / 800))
         }
     

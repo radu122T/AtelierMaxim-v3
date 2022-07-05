@@ -9,7 +9,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import { Link } from "react-router-dom"
 
 const SingleItem = ({currentItem,addDimension,addToCart,addSuport,addGravura1,addGravura2}) => {
-    
+    window.scrollTo(0, 0);
 
     const [switchGravuraCopac,setSwitchGravuraCopac] = useState(false)
     const [switchGravuraSupport,setSwitchGravuraSupport] = useState(false)

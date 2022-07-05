@@ -6,6 +6,7 @@ import Nav from "../components/Nav"
 import { Link } from "react-router-dom"
 
 const Cart = ({ cart }) => {
+    window.scrollTo(0, 0);
     const [totalPrice, setTotalPrice] = useState(0)
     const [totalItems, setTotalItems] = useState(0)
     const [isChecked, setIsChecked] = useState(true);
