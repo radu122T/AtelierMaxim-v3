@@ -1,6 +1,2466 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
+
+/***/ "./node_modules/axios/index.js":
+/*!*************************************!*\
+  !*** ./node_modules/axios/index.js ***!
+  \*************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+module.exports = __webpack_require__(/*! ./lib/axios */ "./node_modules/axios/lib/axios.js");
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/adapters/xhr.js":
+/*!************************************************!*\
+  !*** ./node_modules/axios/lib/adapters/xhr.js ***!
+  \************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+var settle = __webpack_require__(/*! ./../core/settle */ "./node_modules/axios/lib/core/settle.js");
+var cookies = __webpack_require__(/*! ./../helpers/cookies */ "./node_modules/axios/lib/helpers/cookies.js");
+var buildURL = __webpack_require__(/*! ./../helpers/buildURL */ "./node_modules/axios/lib/helpers/buildURL.js");
+var buildFullPath = __webpack_require__(/*! ../core/buildFullPath */ "./node_modules/axios/lib/core/buildFullPath.js");
+var parseHeaders = __webpack_require__(/*! ./../helpers/parseHeaders */ "./node_modules/axios/lib/helpers/parseHeaders.js");
+var isURLSameOrigin = __webpack_require__(/*! ./../helpers/isURLSameOrigin */ "./node_modules/axios/lib/helpers/isURLSameOrigin.js");
+var transitionalDefaults = __webpack_require__(/*! ../defaults/transitional */ "./node_modules/axios/lib/defaults/transitional.js");
+var AxiosError = __webpack_require__(/*! ../core/AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+var CanceledError = __webpack_require__(/*! ../cancel/CanceledError */ "./node_modules/axios/lib/cancel/CanceledError.js");
+var parseProtocol = __webpack_require__(/*! ../helpers/parseProtocol */ "./node_modules/axios/lib/helpers/parseProtocol.js");
+
+module.exports = function xhrAdapter(config) {
+  return new Promise(function dispatchXhrRequest(resolve, reject) {
+    var requestData = config.data;
+    var requestHeaders = config.headers;
+    var responseType = config.responseType;
+    var onCanceled;
+    function done() {
+      if (config.cancelToken) {
+        config.cancelToken.unsubscribe(onCanceled);
+      }
+
+      if (config.signal) {
+        config.signal.removeEventListener('abort', onCanceled);
+      }
+    }
+
+    if (utils.isFormData(requestData) && utils.isStandardBrowserEnv()) {
+      delete requestHeaders['Content-Type']; // Let the browser set it
+    }
+
+    var request = new XMLHttpRequest();
+
+    // HTTP basic authentication
+    if (config.auth) {
+      var username = config.auth.username || '';
+      var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';
+      requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
+    }
+
+    var fullPath = buildFullPath(config.baseURL, config.url);
+
+    request.open(config.method.toUpperCase(), buildURL(fullPath, config.params, config.paramsSerializer), true);
+
+    // Set the request timeout in MS
+    request.timeout = config.timeout;
+
+    function onloadend() {
+      if (!request) {
+        return;
+      }
+      // Prepare the response
+      var responseHeaders = 'getAllResponseHeaders' in request ? parseHeaders(request.getAllResponseHeaders()) : null;
+      var responseData = !responseType || responseType === 'text' ||  responseType === 'json' ?
+        request.responseText : request.response;
+      var response = {
+        data: responseData,
+        status: request.status,
+        statusText: request.statusText,
+        headers: responseHeaders,
+        config: config,
+        request: request
+      };
+
+      settle(function _resolve(value) {
+        resolve(value);
+        done();
+      }, function _reject(err) {
+        reject(err);
+        done();
+      }, response);
+
+      // Clean up request
+      request = null;
+    }
+
+    if ('onloadend' in request) {
+      // Use onloadend if available
+      request.onloadend = onloadend;
+    } else {
+      // Listen for ready state to emulate onloadend
+      request.onreadystatechange = function handleLoad() {
+        if (!request || request.readyState !== 4) {
+          return;
+        }
+
+        // The request errored out and we didn't get a response, this will be
+        // handled by onerror instead
+        // With one exception: request that using file: protocol, most browsers
+        // will return status as 0 even though it's a successful request
+        if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf('file:') === 0)) {
+          return;
+        }
+        // readystate handler is calling before onerror or ontimeout handlers,
+        // so we should call onloadend on the next 'tick'
+        setTimeout(onloadend);
+      };
+    }
+
+    // Handle browser request cancellation (as opposed to a manual cancellation)
+    request.onabort = function handleAbort() {
+      if (!request) {
+        return;
+      }
+
+      reject(new AxiosError('Request aborted', AxiosError.ECONNABORTED, config, request));
+
+      // Clean up request
+      request = null;
+    };
+
+    // Handle low level network errors
+    request.onerror = function handleError() {
+      // Real errors are hidden from us by the browser
+      // onerror should only fire if it's a network error
+      reject(new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request, request));
+
+      // Clean up request
+      request = null;
+    };
+
+    // Handle timeout
+    request.ontimeout = function handleTimeout() {
+      var timeoutErrorMessage = config.timeout ? 'timeout of ' + config.timeout + 'ms exceeded' : 'timeout exceeded';
+      var transitional = config.transitional || transitionalDefaults;
+      if (config.timeoutErrorMessage) {
+        timeoutErrorMessage = config.timeoutErrorMessage;
+      }
+      reject(new AxiosError(
+        timeoutErrorMessage,
+        transitional.clarifyTimeoutError ? AxiosError.ETIMEDOUT : AxiosError.ECONNABORTED,
+        config,
+        request));
+
+      // Clean up request
+      request = null;
+    };
+
+    // Add xsrf header
+    // This is only done if running in a standard browser environment.
+    // Specifically not if we're in a web worker, or react-native.
+    if (utils.isStandardBrowserEnv()) {
+      // Add xsrf header
+      var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ?
+        cookies.read(config.xsrfCookieName) :
+        undefined;
+
+      if (xsrfValue) {
+        requestHeaders[config.xsrfHeaderName] = xsrfValue;
+      }
+    }
+
+    // Add headers to the request
+    if ('setRequestHeader' in request) {
+      utils.forEach(requestHeaders, function setRequestHeader(val, key) {
+        if (typeof requestData === 'undefined' && key.toLowerCase() === 'content-type') {
+          // Remove Content-Type if data is undefined
+          delete requestHeaders[key];
+        } else {
+          // Otherwise add header to the request
+          request.setRequestHeader(key, val);
+        }
+      });
+    }
+
+    // Add withCredentials to request if needed
+    if (!utils.isUndefined(config.withCredentials)) {
+      request.withCredentials = !!config.withCredentials;
+    }
+
+    // Add responseType to request if needed
+    if (responseType && responseType !== 'json') {
+      request.responseType = config.responseType;
+    }
+
+    // Handle progress if needed
+    if (typeof config.onDownloadProgress === 'function') {
+      request.addEventListener('progress', config.onDownloadProgress);
+    }
+
+    // Not all browsers support upload events
+    if (typeof config.onUploadProgress === 'function' && request.upload) {
+      request.upload.addEventListener('progress', config.onUploadProgress);
+    }
+
+    if (config.cancelToken || config.signal) {
+      // Handle cancellation
+      // eslint-disable-next-line func-names
+      onCanceled = function(cancel) {
+        if (!request) {
+          return;
+        }
+        reject(!cancel || (cancel && cancel.type) ? new CanceledError() : cancel);
+        request.abort();
+        request = null;
+      };
+
+      config.cancelToken && config.cancelToken.subscribe(onCanceled);
+      if (config.signal) {
+        config.signal.aborted ? onCanceled() : config.signal.addEventListener('abort', onCanceled);
+      }
+    }
+
+    if (!requestData) {
+      requestData = null;
+    }
+
+    var protocol = parseProtocol(fullPath);
+
+    if (protocol && [ 'http', 'https', 'file' ].indexOf(protocol) === -1) {
+      reject(new AxiosError('Unsupported protocol ' + protocol + ':', AxiosError.ERR_BAD_REQUEST, config));
+      return;
+    }
+
+
+    // Send the request
+    request.send(requestData);
+  });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/axios.js":
+/*!*****************************************!*\
+  !*** ./node_modules/axios/lib/axios.js ***!
+  \*****************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./utils */ "./node_modules/axios/lib/utils.js");
+var bind = __webpack_require__(/*! ./helpers/bind */ "./node_modules/axios/lib/helpers/bind.js");
+var Axios = __webpack_require__(/*! ./core/Axios */ "./node_modules/axios/lib/core/Axios.js");
+var mergeConfig = __webpack_require__(/*! ./core/mergeConfig */ "./node_modules/axios/lib/core/mergeConfig.js");
+var defaults = __webpack_require__(/*! ./defaults */ "./node_modules/axios/lib/defaults/index.js");
+
+/**
+ * Create an instance of Axios
+ *
+ * @param {Object} defaultConfig The default config for the instance
+ * @return {Axios} A new instance of Axios
+ */
+function createInstance(defaultConfig) {
+  var context = new Axios(defaultConfig);
+  var instance = bind(Axios.prototype.request, context);
+
+  // Copy axios.prototype to instance
+  utils.extend(instance, Axios.prototype, context);
+
+  // Copy context to instance
+  utils.extend(instance, context);
+
+  // Factory for creating new instances
+  instance.create = function create(instanceConfig) {
+    return createInstance(mergeConfig(defaultConfig, instanceConfig));
+  };
+
+  return instance;
+}
+
+// Create the default instance to be exported
+var axios = createInstance(defaults);
+
+// Expose Axios class to allow class inheritance
+axios.Axios = Axios;
+
+// Expose Cancel & CancelToken
+axios.CanceledError = __webpack_require__(/*! ./cancel/CanceledError */ "./node_modules/axios/lib/cancel/CanceledError.js");
+axios.CancelToken = __webpack_require__(/*! ./cancel/CancelToken */ "./node_modules/axios/lib/cancel/CancelToken.js");
+axios.isCancel = __webpack_require__(/*! ./cancel/isCancel */ "./node_modules/axios/lib/cancel/isCancel.js");
+axios.VERSION = (__webpack_require__(/*! ./env/data */ "./node_modules/axios/lib/env/data.js").version);
+axios.toFormData = __webpack_require__(/*! ./helpers/toFormData */ "./node_modules/axios/lib/helpers/toFormData.js");
+
+// Expose AxiosError class
+axios.AxiosError = __webpack_require__(/*! ../lib/core/AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+
+// alias for CanceledError for backward compatibility
+axios.Cancel = axios.CanceledError;
+
+// Expose all/spread
+axios.all = function all(promises) {
+  return Promise.all(promises);
+};
+axios.spread = __webpack_require__(/*! ./helpers/spread */ "./node_modules/axios/lib/helpers/spread.js");
+
+// Expose isAxiosError
+axios.isAxiosError = __webpack_require__(/*! ./helpers/isAxiosError */ "./node_modules/axios/lib/helpers/isAxiosError.js");
+
+module.exports = axios;
+
+// Allow use of default import syntax in TypeScript
+module.exports["default"] = axios;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/cancel/CancelToken.js":
+/*!******************************************************!*\
+  !*** ./node_modules/axios/lib/cancel/CancelToken.js ***!
+  \******************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var CanceledError = __webpack_require__(/*! ./CanceledError */ "./node_modules/axios/lib/cancel/CanceledError.js");
+
+/**
+ * A `CancelToken` is an object that can be used to request cancellation of an operation.
+ *
+ * @class
+ * @param {Function} executor The executor function.
+ */
+function CancelToken(executor) {
+  if (typeof executor !== 'function') {
+    throw new TypeError('executor must be a function.');
+  }
+
+  var resolvePromise;
+
+  this.promise = new Promise(function promiseExecutor(resolve) {
+    resolvePromise = resolve;
+  });
+
+  var token = this;
+
+  // eslint-disable-next-line func-names
+  this.promise.then(function(cancel) {
+    if (!token._listeners) return;
+
+    var i;
+    var l = token._listeners.length;
+
+    for (i = 0; i < l; i++) {
+      token._listeners[i](cancel);
+    }
+    token._listeners = null;
+  });
+
+  // eslint-disable-next-line func-names
+  this.promise.then = function(onfulfilled) {
+    var _resolve;
+    // eslint-disable-next-line func-names
+    var promise = new Promise(function(resolve) {
+      token.subscribe(resolve);
+      _resolve = resolve;
+    }).then(onfulfilled);
+
+    promise.cancel = function reject() {
+      token.unsubscribe(_resolve);
+    };
+
+    return promise;
+  };
+
+  executor(function cancel(message) {
+    if (token.reason) {
+      // Cancellation has already been requested
+      return;
+    }
+
+    token.reason = new CanceledError(message);
+    resolvePromise(token.reason);
+  });
+}
+
+/**
+ * Throws a `CanceledError` if cancellation has been requested.
+ */
+CancelToken.prototype.throwIfRequested = function throwIfRequested() {
+  if (this.reason) {
+    throw this.reason;
+  }
+};
+
+/**
+ * Subscribe to the cancel signal
+ */
+
+CancelToken.prototype.subscribe = function subscribe(listener) {
+  if (this.reason) {
+    listener(this.reason);
+    return;
+  }
+
+  if (this._listeners) {
+    this._listeners.push(listener);
+  } else {
+    this._listeners = [listener];
+  }
+};
+
+/**
+ * Unsubscribe from the cancel signal
+ */
+
+CancelToken.prototype.unsubscribe = function unsubscribe(listener) {
+  if (!this._listeners) {
+    return;
+  }
+  var index = this._listeners.indexOf(listener);
+  if (index !== -1) {
+    this._listeners.splice(index, 1);
+  }
+};
+
+/**
+ * Returns an object that contains a new `CancelToken` and a function that, when called,
+ * cancels the `CancelToken`.
+ */
+CancelToken.source = function source() {
+  var cancel;
+  var token = new CancelToken(function executor(c) {
+    cancel = c;
+  });
+  return {
+    token: token,
+    cancel: cancel
+  };
+};
+
+module.exports = CancelToken;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/cancel/CanceledError.js":
+/*!********************************************************!*\
+  !*** ./node_modules/axios/lib/cancel/CanceledError.js ***!
+  \********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var AxiosError = __webpack_require__(/*! ../core/AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+
+/**
+ * A `CanceledError` is an object that is thrown when an operation is canceled.
+ *
+ * @class
+ * @param {string=} message The message.
+ */
+function CanceledError(message) {
+  // eslint-disable-next-line no-eq-null,eqeqeq
+  AxiosError.call(this, message == null ? 'canceled' : message, AxiosError.ERR_CANCELED);
+  this.name = 'CanceledError';
+}
+
+utils.inherits(CanceledError, AxiosError, {
+  __CANCEL__: true
+});
+
+module.exports = CanceledError;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/cancel/isCancel.js":
+/*!***************************************************!*\
+  !*** ./node_modules/axios/lib/cancel/isCancel.js ***!
+  \***************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = function isCancel(value) {
+  return !!(value && value.__CANCEL__);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/Axios.js":
+/*!**********************************************!*\
+  !*** ./node_modules/axios/lib/core/Axios.js ***!
+  \**********************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+var buildURL = __webpack_require__(/*! ../helpers/buildURL */ "./node_modules/axios/lib/helpers/buildURL.js");
+var InterceptorManager = __webpack_require__(/*! ./InterceptorManager */ "./node_modules/axios/lib/core/InterceptorManager.js");
+var dispatchRequest = __webpack_require__(/*! ./dispatchRequest */ "./node_modules/axios/lib/core/dispatchRequest.js");
+var mergeConfig = __webpack_require__(/*! ./mergeConfig */ "./node_modules/axios/lib/core/mergeConfig.js");
+var buildFullPath = __webpack_require__(/*! ./buildFullPath */ "./node_modules/axios/lib/core/buildFullPath.js");
+var validator = __webpack_require__(/*! ../helpers/validator */ "./node_modules/axios/lib/helpers/validator.js");
+
+var validators = validator.validators;
+/**
+ * Create a new instance of Axios
+ *
+ * @param {Object} instanceConfig The default config for the instance
+ */
+function Axios(instanceConfig) {
+  this.defaults = instanceConfig;
+  this.interceptors = {
+    request: new InterceptorManager(),
+    response: new InterceptorManager()
+  };
+}
+
+/**
+ * Dispatch a request
+ *
+ * @param {Object} config The config specific for this request (merged with this.defaults)
+ */
+Axios.prototype.request = function request(configOrUrl, config) {
+  /*eslint no-param-reassign:0*/
+  // Allow for axios('example/url'[, config]) a la fetch API
+  if (typeof configOrUrl === 'string') {
+    config = config || {};
+    config.url = configOrUrl;
+  } else {
+    config = configOrUrl || {};
+  }
+
+  config = mergeConfig(this.defaults, config);
+
+  // Set config.method
+  if (config.method) {
+    config.method = config.method.toLowerCase();
+  } else if (this.defaults.method) {
+    config.method = this.defaults.method.toLowerCase();
+  } else {
+    config.method = 'get';
+  }
+
+  var transitional = config.transitional;
+
+  if (transitional !== undefined) {
+    validator.assertOptions(transitional, {
+      silentJSONParsing: validators.transitional(validators.boolean),
+      forcedJSONParsing: validators.transitional(validators.boolean),
+      clarifyTimeoutError: validators.transitional(validators.boolean)
+    }, false);
+  }
+
+  // filter out skipped interceptors
+  var requestInterceptorChain = [];
+  var synchronousRequestInterceptors = true;
+  this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
+    if (typeof interceptor.runWhen === 'function' && interceptor.runWhen(config) === false) {
+      return;
+    }
+
+    synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
+
+    requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+  });
+
+  var responseInterceptorChain = [];
+  this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
+    responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+  });
+
+  var promise;
+
+  if (!synchronousRequestInterceptors) {
+    var chain = [dispatchRequest, undefined];
+
+    Array.prototype.unshift.apply(chain, requestInterceptorChain);
+    chain = chain.concat(responseInterceptorChain);
+
+    promise = Promise.resolve(config);
+    while (chain.length) {
+      promise = promise.then(chain.shift(), chain.shift());
+    }
+
+    return promise;
+  }
+
+
+  var newConfig = config;
+  while (requestInterceptorChain.length) {
+    var onFulfilled = requestInterceptorChain.shift();
+    var onRejected = requestInterceptorChain.shift();
+    try {
+      newConfig = onFulfilled(newConfig);
+    } catch (error) {
+      onRejected(error);
+      break;
+    }
+  }
+
+  try {
+    promise = dispatchRequest(newConfig);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+
+  while (responseInterceptorChain.length) {
+    promise = promise.then(responseInterceptorChain.shift(), responseInterceptorChain.shift());
+  }
+
+  return promise;
+};
+
+Axios.prototype.getUri = function getUri(config) {
+  config = mergeConfig(this.defaults, config);
+  var fullPath = buildFullPath(config.baseURL, config.url);
+  return buildURL(fullPath, config.params, config.paramsSerializer);
+};
+
+// Provide aliases for supported request methods
+utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
+  /*eslint func-names:0*/
+  Axios.prototype[method] = function(url, config) {
+    return this.request(mergeConfig(config || {}, {
+      method: method,
+      url: url,
+      data: (config || {}).data
+    }));
+  };
+});
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  /*eslint func-names:0*/
+
+  function generateHTTPMethod(isForm) {
+    return function httpMethod(url, data, config) {
+      return this.request(mergeConfig(config || {}, {
+        method: method,
+        headers: isForm ? {
+          'Content-Type': 'multipart/form-data'
+        } : {},
+        url: url,
+        data: data
+      }));
+    };
+  }
+
+  Axios.prototype[method] = generateHTTPMethod();
+
+  Axios.prototype[method + 'Form'] = generateHTTPMethod(true);
+});
+
+module.exports = Axios;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/AxiosError.js":
+/*!***************************************************!*\
+  !*** ./node_modules/axios/lib/core/AxiosError.js ***!
+  \***************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+
+/**
+ * Create an Error with the specified message, config, error code, request and response.
+ *
+ * @param {string} message The error message.
+ * @param {string} [code] The error code (for example, 'ECONNABORTED').
+ * @param {Object} [config] The config.
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
+ * @returns {Error} The created error.
+ */
+function AxiosError(message, code, config, request, response) {
+  Error.call(this);
+  this.message = message;
+  this.name = 'AxiosError';
+  code && (this.code = code);
+  config && (this.config = config);
+  request && (this.request = request);
+  response && (this.response = response);
+}
+
+utils.inherits(AxiosError, Error, {
+  toJSON: function toJSON() {
+    return {
+      // Standard
+      message: this.message,
+      name: this.name,
+      // Microsoft
+      description: this.description,
+      number: this.number,
+      // Mozilla
+      fileName: this.fileName,
+      lineNumber: this.lineNumber,
+      columnNumber: this.columnNumber,
+      stack: this.stack,
+      // Axios
+      config: this.config,
+      code: this.code,
+      status: this.response && this.response.status ? this.response.status : null
+    };
+  }
+});
+
+var prototype = AxiosError.prototype;
+var descriptors = {};
+
+[
+  'ERR_BAD_OPTION_VALUE',
+  'ERR_BAD_OPTION',
+  'ECONNABORTED',
+  'ETIMEDOUT',
+  'ERR_NETWORK',
+  'ERR_FR_TOO_MANY_REDIRECTS',
+  'ERR_DEPRECATED',
+  'ERR_BAD_RESPONSE',
+  'ERR_BAD_REQUEST',
+  'ERR_CANCELED'
+// eslint-disable-next-line func-names
+].forEach(function(code) {
+  descriptors[code] = {value: code};
+});
+
+Object.defineProperties(AxiosError, descriptors);
+Object.defineProperty(prototype, 'isAxiosError', {value: true});
+
+// eslint-disable-next-line func-names
+AxiosError.from = function(error, code, config, request, response, customProps) {
+  var axiosError = Object.create(prototype);
+
+  utils.toFlatObject(error, axiosError, function filter(obj) {
+    return obj !== Error.prototype;
+  });
+
+  AxiosError.call(axiosError, error.message, code, config, request, response);
+
+  axiosError.name = error.name;
+
+  customProps && Object.assign(axiosError, customProps);
+
+  return axiosError;
+};
+
+module.exports = AxiosError;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/InterceptorManager.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/axios/lib/core/InterceptorManager.js ***!
+  \***********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+function InterceptorManager() {
+  this.handlers = [];
+}
+
+/**
+ * Add a new interceptor to the stack
+ *
+ * @param {Function} fulfilled The function to handle `then` for a `Promise`
+ * @param {Function} rejected The function to handle `reject` for a `Promise`
+ *
+ * @return {Number} An ID used to remove interceptor later
+ */
+InterceptorManager.prototype.use = function use(fulfilled, rejected, options) {
+  this.handlers.push({
+    fulfilled: fulfilled,
+    rejected: rejected,
+    synchronous: options ? options.synchronous : false,
+    runWhen: options ? options.runWhen : null
+  });
+  return this.handlers.length - 1;
+};
+
+/**
+ * Remove an interceptor from the stack
+ *
+ * @param {Number} id The ID that was returned by `use`
+ */
+InterceptorManager.prototype.eject = function eject(id) {
+  if (this.handlers[id]) {
+    this.handlers[id] = null;
+  }
+};
+
+/**
+ * Iterate over all the registered interceptors
+ *
+ * This method is particularly useful for skipping over any
+ * interceptors that may have become `null` calling `eject`.
+ *
+ * @param {Function} fn The function to call for each interceptor
+ */
+InterceptorManager.prototype.forEach = function forEach(fn) {
+  utils.forEach(this.handlers, function forEachHandler(h) {
+    if (h !== null) {
+      fn(h);
+    }
+  });
+};
+
+module.exports = InterceptorManager;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/buildFullPath.js":
+/*!******************************************************!*\
+  !*** ./node_modules/axios/lib/core/buildFullPath.js ***!
+  \******************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var isAbsoluteURL = __webpack_require__(/*! ../helpers/isAbsoluteURL */ "./node_modules/axios/lib/helpers/isAbsoluteURL.js");
+var combineURLs = __webpack_require__(/*! ../helpers/combineURLs */ "./node_modules/axios/lib/helpers/combineURLs.js");
+
+/**
+ * Creates a new URL by combining the baseURL with the requestedURL,
+ * only when the requestedURL is not already an absolute URL.
+ * If the requestURL is absolute, this function returns the requestedURL untouched.
+ *
+ * @param {string} baseURL The base URL
+ * @param {string} requestedURL Absolute or relative URL to combine
+ * @returns {string} The combined full path
+ */
+module.exports = function buildFullPath(baseURL, requestedURL) {
+  if (baseURL && !isAbsoluteURL(requestedURL)) {
+    return combineURLs(baseURL, requestedURL);
+  }
+  return requestedURL;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/dispatchRequest.js":
+/*!********************************************************!*\
+  !*** ./node_modules/axios/lib/core/dispatchRequest.js ***!
+  \********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+var transformData = __webpack_require__(/*! ./transformData */ "./node_modules/axios/lib/core/transformData.js");
+var isCancel = __webpack_require__(/*! ../cancel/isCancel */ "./node_modules/axios/lib/cancel/isCancel.js");
+var defaults = __webpack_require__(/*! ../defaults */ "./node_modules/axios/lib/defaults/index.js");
+var CanceledError = __webpack_require__(/*! ../cancel/CanceledError */ "./node_modules/axios/lib/cancel/CanceledError.js");
+
+/**
+ * Throws a `CanceledError` if cancellation has been requested.
+ */
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+
+  if (config.signal && config.signal.aborted) {
+    throw new CanceledError();
+  }
+}
+
+/**
+ * Dispatch a request to the server using the configured adapter.
+ *
+ * @param {object} config The config that is to be used for the request
+ * @returns {Promise} The Promise to be fulfilled
+ */
+module.exports = function dispatchRequest(config) {
+  throwIfCancellationRequested(config);
+
+  // Ensure headers exist
+  config.headers = config.headers || {};
+
+  // Transform request data
+  config.data = transformData.call(
+    config,
+    config.data,
+    config.headers,
+    config.transformRequest
+  );
+
+  // Flatten headers
+  config.headers = utils.merge(
+    config.headers.common || {},
+    config.headers[config.method] || {},
+    config.headers
+  );
+
+  utils.forEach(
+    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
+    function cleanHeaderConfig(method) {
+      delete config.headers[method];
+    }
+  );
+
+  var adapter = config.adapter || defaults.adapter;
+
+  return adapter(config).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    response.data = transformData.call(
+      config,
+      response.data,
+      response.headers,
+      config.transformResponse
+    );
+
+    return response;
+  }, function onAdapterRejection(reason) {
+    if (!isCancel(reason)) {
+      throwIfCancellationRequested(config);
+
+      // Transform response data
+      if (reason && reason.response) {
+        reason.response.data = transformData.call(
+          config,
+          reason.response.data,
+          reason.response.headers,
+          config.transformResponse
+        );
+      }
+    }
+
+    return Promise.reject(reason);
+  });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/mergeConfig.js":
+/*!****************************************************!*\
+  !*** ./node_modules/axios/lib/core/mergeConfig.js ***!
+  \****************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+
+/**
+ * Config-specific merge-function which creates a new config-object
+ * by merging two configuration objects together.
+ *
+ * @param {Object} config1
+ * @param {Object} config2
+ * @returns {Object} New object resulting from merging config2 to config1
+ */
+module.exports = function mergeConfig(config1, config2) {
+  // eslint-disable-next-line no-param-reassign
+  config2 = config2 || {};
+  var config = {};
+
+  function getMergedValue(target, source) {
+    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
+      return utils.merge(target, source);
+    } else if (utils.isPlainObject(source)) {
+      return utils.merge({}, source);
+    } else if (utils.isArray(source)) {
+      return source.slice();
+    }
+    return source;
+  }
+
+  // eslint-disable-next-line consistent-return
+  function mergeDeepProperties(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      return getMergedValue(config1[prop], config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      return getMergedValue(undefined, config1[prop]);
+    }
+  }
+
+  // eslint-disable-next-line consistent-return
+  function valueFromConfig2(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      return getMergedValue(undefined, config2[prop]);
+    }
+  }
+
+  // eslint-disable-next-line consistent-return
+  function defaultToConfig2(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      return getMergedValue(undefined, config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      return getMergedValue(undefined, config1[prop]);
+    }
+  }
+
+  // eslint-disable-next-line consistent-return
+  function mergeDirectKeys(prop) {
+    if (prop in config2) {
+      return getMergedValue(config1[prop], config2[prop]);
+    } else if (prop in config1) {
+      return getMergedValue(undefined, config1[prop]);
+    }
+  }
+
+  var mergeMap = {
+    'url': valueFromConfig2,
+    'method': valueFromConfig2,
+    'data': valueFromConfig2,
+    'baseURL': defaultToConfig2,
+    'transformRequest': defaultToConfig2,
+    'transformResponse': defaultToConfig2,
+    'paramsSerializer': defaultToConfig2,
+    'timeout': defaultToConfig2,
+    'timeoutMessage': defaultToConfig2,
+    'withCredentials': defaultToConfig2,
+    'adapter': defaultToConfig2,
+    'responseType': defaultToConfig2,
+    'xsrfCookieName': defaultToConfig2,
+    'xsrfHeaderName': defaultToConfig2,
+    'onUploadProgress': defaultToConfig2,
+    'onDownloadProgress': defaultToConfig2,
+    'decompress': defaultToConfig2,
+    'maxContentLength': defaultToConfig2,
+    'maxBodyLength': defaultToConfig2,
+    'beforeRedirect': defaultToConfig2,
+    'transport': defaultToConfig2,
+    'httpAgent': defaultToConfig2,
+    'httpsAgent': defaultToConfig2,
+    'cancelToken': defaultToConfig2,
+    'socketPath': defaultToConfig2,
+    'responseEncoding': defaultToConfig2,
+    'validateStatus': mergeDirectKeys
+  };
+
+  utils.forEach(Object.keys(config1).concat(Object.keys(config2)), function computeConfigValue(prop) {
+    var merge = mergeMap[prop] || mergeDeepProperties;
+    var configValue = merge(prop);
+    (utils.isUndefined(configValue) && merge !== mergeDirectKeys) || (config[prop] = configValue);
+  });
+
+  return config;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/settle.js":
+/*!***********************************************!*\
+  !*** ./node_modules/axios/lib/core/settle.js ***!
+  \***********************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var AxiosError = __webpack_require__(/*! ./AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+
+/**
+ * Resolve or reject a Promise based on response status.
+ *
+ * @param {Function} resolve A function that resolves the promise.
+ * @param {Function} reject A function that rejects the promise.
+ * @param {object} response The response.
+ */
+module.exports = function settle(resolve, reject, response) {
+  var validateStatus = response.config.validateStatus;
+  if (!response.status || !validateStatus || validateStatus(response.status)) {
+    resolve(response);
+  } else {
+    reject(new AxiosError(
+      'Request failed with status code ' + response.status,
+      [AxiosError.ERR_BAD_REQUEST, AxiosError.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
+      response.config,
+      response.request,
+      response
+    ));
+  }
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/core/transformData.js":
+/*!******************************************************!*\
+  !*** ./node_modules/axios/lib/core/transformData.js ***!
+  \******************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+var defaults = __webpack_require__(/*! ../defaults */ "./node_modules/axios/lib/defaults/index.js");
+
+/**
+ * Transform the data for a request or a response
+ *
+ * @param {Object|String} data The data to be transformed
+ * @param {Array} headers The headers for the request or response
+ * @param {Array|Function} fns A single function or Array of functions
+ * @returns {*} The resulting transformed data
+ */
+module.exports = function transformData(data, headers, fns) {
+  var context = this || defaults;
+  /*eslint no-param-reassign:0*/
+  utils.forEach(fns, function transform(fn) {
+    data = fn.call(context, data, headers);
+  });
+
+  return data;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/defaults/index.js":
+/*!**************************************************!*\
+  !*** ./node_modules/axios/lib/defaults/index.js ***!
+  \**************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+var normalizeHeaderName = __webpack_require__(/*! ../helpers/normalizeHeaderName */ "./node_modules/axios/lib/helpers/normalizeHeaderName.js");
+var AxiosError = __webpack_require__(/*! ../core/AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+var transitionalDefaults = __webpack_require__(/*! ./transitional */ "./node_modules/axios/lib/defaults/transitional.js");
+var toFormData = __webpack_require__(/*! ../helpers/toFormData */ "./node_modules/axios/lib/helpers/toFormData.js");
+
+var DEFAULT_CONTENT_TYPE = {
+  'Content-Type': 'application/x-www-form-urlencoded'
+};
+
+function setContentTypeIfUnset(headers, value) {
+  if (!utils.isUndefined(headers) && utils.isUndefined(headers['Content-Type'])) {
+    headers['Content-Type'] = value;
+  }
+}
+
+function getDefaultAdapter() {
+  var adapter;
+  if (typeof XMLHttpRequest !== 'undefined') {
+    // For browsers use XHR adapter
+    adapter = __webpack_require__(/*! ../adapters/xhr */ "./node_modules/axios/lib/adapters/xhr.js");
+  } else if (typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]') {
+    // For node use HTTP adapter
+    adapter = __webpack_require__(/*! ../adapters/http */ "./node_modules/axios/lib/adapters/xhr.js");
+  }
+  return adapter;
+}
+
+function stringifySafely(rawValue, parser, encoder) {
+  if (utils.isString(rawValue)) {
+    try {
+      (parser || JSON.parse)(rawValue);
+      return utils.trim(rawValue);
+    } catch (e) {
+      if (e.name !== 'SyntaxError') {
+        throw e;
+      }
+    }
+  }
+
+  return (encoder || JSON.stringify)(rawValue);
+}
+
+var defaults = {
+
+  transitional: transitionalDefaults,
+
+  adapter: getDefaultAdapter(),
+
+  transformRequest: [function transformRequest(data, headers) {
+    normalizeHeaderName(headers, 'Accept');
+    normalizeHeaderName(headers, 'Content-Type');
+
+    if (utils.isFormData(data) ||
+      utils.isArrayBuffer(data) ||
+      utils.isBuffer(data) ||
+      utils.isStream(data) ||
+      utils.isFile(data) ||
+      utils.isBlob(data)
+    ) {
+      return data;
+    }
+    if (utils.isArrayBufferView(data)) {
+      return data.buffer;
+    }
+    if (utils.isURLSearchParams(data)) {
+      setContentTypeIfUnset(headers, 'application/x-www-form-urlencoded;charset=utf-8');
+      return data.toString();
+    }
+
+    var isObjectPayload = utils.isObject(data);
+    var contentType = headers && headers['Content-Type'];
+
+    var isFileList;
+
+    if ((isFileList = utils.isFileList(data)) || (isObjectPayload && contentType === 'multipart/form-data')) {
+      var _FormData = this.env && this.env.FormData;
+      return toFormData(isFileList ? {'files[]': data} : data, _FormData && new _FormData());
+    } else if (isObjectPayload || contentType === 'application/json') {
+      setContentTypeIfUnset(headers, 'application/json');
+      return stringifySafely(data);
+    }
+
+    return data;
+  }],
+
+  transformResponse: [function transformResponse(data) {
+    var transitional = this.transitional || defaults.transitional;
+    var silentJSONParsing = transitional && transitional.silentJSONParsing;
+    var forcedJSONParsing = transitional && transitional.forcedJSONParsing;
+    var strictJSONParsing = !silentJSONParsing && this.responseType === 'json';
+
+    if (strictJSONParsing || (forcedJSONParsing && utils.isString(data) && data.length)) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        if (strictJSONParsing) {
+          if (e.name === 'SyntaxError') {
+            throw AxiosError.from(e, AxiosError.ERR_BAD_RESPONSE, this, null, this.response);
+          }
+          throw e;
+        }
+      }
+    }
+
+    return data;
+  }],
+
+  /**
+   * A timeout in milliseconds to abort a request. If set to 0 (default) a
+   * timeout is not created.
+   */
+  timeout: 0,
+
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+
+  maxContentLength: -1,
+  maxBodyLength: -1,
+
+  env: {
+    FormData: __webpack_require__(/*! ./env/FormData */ "./node_modules/axios/lib/helpers/null.js")
+  },
+
+  validateStatus: function validateStatus(status) {
+    return status >= 200 && status < 300;
+  },
+
+  headers: {
+    common: {
+      'Accept': 'application/json, text/plain, */*'
+    }
+  }
+};
+
+utils.forEach(['delete', 'get', 'head'], function forEachMethodNoData(method) {
+  defaults.headers[method] = {};
+});
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  defaults.headers[method] = utils.merge(DEFAULT_CONTENT_TYPE);
+});
+
+module.exports = defaults;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/defaults/transitional.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/axios/lib/defaults/transitional.js ***!
+  \*********************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = {
+  silentJSONParsing: true,
+  forcedJSONParsing: true,
+  clarifyTimeoutError: false
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/env/data.js":
+/*!********************************************!*\
+  !*** ./node_modules/axios/lib/env/data.js ***!
+  \********************************************/
+/***/ ((module) => {
+
+module.exports = {
+  "version": "0.27.2"
+};
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/bind.js":
+/*!************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/bind.js ***!
+  \************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = function bind(fn, thisArg) {
+  return function wrap() {
+    var args = new Array(arguments.length);
+    for (var i = 0; i < args.length; i++) {
+      args[i] = arguments[i];
+    }
+    return fn.apply(thisArg, args);
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/buildURL.js":
+/*!****************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/buildURL.js ***!
+  \****************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+function encode(val) {
+  return encodeURIComponent(val).
+    replace(/%3A/gi, ':').
+    replace(/%24/g, '$').
+    replace(/%2C/gi, ',').
+    replace(/%20/g, '+').
+    replace(/%5B/gi, '[').
+    replace(/%5D/gi, ']');
+}
+
+/**
+ * Build a URL by appending params to the end
+ *
+ * @param {string} url The base of the url (e.g., http://www.google.com)
+ * @param {object} [params] The params to be appended
+ * @returns {string} The formatted url
+ */
+module.exports = function buildURL(url, params, paramsSerializer) {
+  /*eslint no-param-reassign:0*/
+  if (!params) {
+    return url;
+  }
+
+  var serializedParams;
+  if (paramsSerializer) {
+    serializedParams = paramsSerializer(params);
+  } else if (utils.isURLSearchParams(params)) {
+    serializedParams = params.toString();
+  } else {
+    var parts = [];
+
+    utils.forEach(params, function serialize(val, key) {
+      if (val === null || typeof val === 'undefined') {
+        return;
+      }
+
+      if (utils.isArray(val)) {
+        key = key + '[]';
+      } else {
+        val = [val];
+      }
+
+      utils.forEach(val, function parseValue(v) {
+        if (utils.isDate(v)) {
+          v = v.toISOString();
+        } else if (utils.isObject(v)) {
+          v = JSON.stringify(v);
+        }
+        parts.push(encode(key) + '=' + encode(v));
+      });
+    });
+
+    serializedParams = parts.join('&');
+  }
+
+  if (serializedParams) {
+    var hashmarkIndex = url.indexOf('#');
+    if (hashmarkIndex !== -1) {
+      url = url.slice(0, hashmarkIndex);
+    }
+
+    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
+  }
+
+  return url;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/combineURLs.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/combineURLs.js ***!
+  \*******************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+/**
+ * Creates a new URL by combining the specified URLs
+ *
+ * @param {string} baseURL The base URL
+ * @param {string} relativeURL The relative URL
+ * @returns {string} The combined URL
+ */
+module.exports = function combineURLs(baseURL, relativeURL) {
+  return relativeURL
+    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+    : baseURL;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/cookies.js":
+/*!***************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/cookies.js ***!
+  \***************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+module.exports = (
+  utils.isStandardBrowserEnv() ?
+
+  // Standard browser envs support document.cookie
+    (function standardBrowserEnv() {
+      return {
+        write: function write(name, value, expires, path, domain, secure) {
+          var cookie = [];
+          cookie.push(name + '=' + encodeURIComponent(value));
+
+          if (utils.isNumber(expires)) {
+            cookie.push('expires=' + new Date(expires).toGMTString());
+          }
+
+          if (utils.isString(path)) {
+            cookie.push('path=' + path);
+          }
+
+          if (utils.isString(domain)) {
+            cookie.push('domain=' + domain);
+          }
+
+          if (secure === true) {
+            cookie.push('secure');
+          }
+
+          document.cookie = cookie.join('; ');
+        },
+
+        read: function read(name) {
+          var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+          return (match ? decodeURIComponent(match[3]) : null);
+        },
+
+        remove: function remove(name) {
+          this.write(name, '', Date.now() - 86400000);
+        }
+      };
+    })() :
+
+  // Non standard browser env (web workers, react-native) lack needed support.
+    (function nonStandardBrowserEnv() {
+      return {
+        write: function write() {},
+        read: function read() { return null; },
+        remove: function remove() {}
+      };
+    })()
+);
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/isAbsoluteURL.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/isAbsoluteURL.js ***!
+  \*********************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+/**
+ * Determines whether the specified URL is absolute
+ *
+ * @param {string} url The URL to test
+ * @returns {boolean} True if the specified URL is absolute, otherwise false
+ */
+module.exports = function isAbsoluteURL(url) {
+  // A URL is considered absolute if it begins with "<scheme>://" or "//" (protocol-relative URL).
+  // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
+  // by any combination of letters, digits, plus, period, or hyphen.
+  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/isAxiosError.js":
+/*!********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/isAxiosError.js ***!
+  \********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+/**
+ * Determines whether the payload is an error thrown by Axios
+ *
+ * @param {*} payload The value to test
+ * @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
+ */
+module.exports = function isAxiosError(payload) {
+  return utils.isObject(payload) && (payload.isAxiosError === true);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/isURLSameOrigin.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/isURLSameOrigin.js ***!
+  \***********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+module.exports = (
+  utils.isStandardBrowserEnv() ?
+
+  // Standard browser envs have full support of the APIs needed to test
+  // whether the request URL is of the same origin as current location.
+    (function standardBrowserEnv() {
+      var msie = /(msie|trident)/i.test(navigator.userAgent);
+      var urlParsingNode = document.createElement('a');
+      var originURL;
+
+      /**
+    * Parse a URL to discover it's components
+    *
+    * @param {String} url The URL to be parsed
+    * @returns {Object}
+    */
+      function resolveURL(url) {
+        var href = url;
+
+        if (msie) {
+        // IE needs attribute set twice to normalize properties
+          urlParsingNode.setAttribute('href', href);
+          href = urlParsingNode.href;
+        }
+
+        urlParsingNode.setAttribute('href', href);
+
+        // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
+        return {
+          href: urlParsingNode.href,
+          protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
+          host: urlParsingNode.host,
+          search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
+          hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
+          hostname: urlParsingNode.hostname,
+          port: urlParsingNode.port,
+          pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
+            urlParsingNode.pathname :
+            '/' + urlParsingNode.pathname
+        };
+      }
+
+      originURL = resolveURL(window.location.href);
+
+      /**
+    * Determine if a URL shares the same origin as the current location
+    *
+    * @param {String} requestURL The URL to test
+    * @returns {boolean} True if URL shares the same origin, otherwise false
+    */
+      return function isURLSameOrigin(requestURL) {
+        var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
+        return (parsed.protocol === originURL.protocol &&
+            parsed.host === originURL.host);
+      };
+    })() :
+
+  // Non standard browser envs (web workers, react-native) lack needed support.
+    (function nonStandardBrowserEnv() {
+      return function isURLSameOrigin() {
+        return true;
+      };
+    })()
+);
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/normalizeHeaderName.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/normalizeHeaderName.js ***!
+  \***************************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+
+module.exports = function normalizeHeaderName(headers, normalizedName) {
+  utils.forEach(headers, function processHeader(value, name) {
+    if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
+      headers[normalizedName] = value;
+      delete headers[name];
+    }
+  });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/null.js":
+/*!************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/null.js ***!
+  \************************************************/
+/***/ ((module) => {
+
+// eslint-disable-next-line strict
+module.exports = null;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/parseHeaders.js":
+/*!********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/parseHeaders.js ***!
+  \********************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
+
+// Headers whose duplicates are ignored by node
+// c.f. https://nodejs.org/api/http.html#http_message_headers
+var ignoreDuplicateOf = [
+  'age', 'authorization', 'content-length', 'content-type', 'etag',
+  'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
+  'last-modified', 'location', 'max-forwards', 'proxy-authorization',
+  'referer', 'retry-after', 'user-agent'
+];
+
+/**
+ * Parse headers into an object
+ *
+ * ```
+ * Date: Wed, 27 Aug 2014 08:58:49 GMT
+ * Content-Type: application/json
+ * Connection: keep-alive
+ * Transfer-Encoding: chunked
+ * ```
+ *
+ * @param {String} headers Headers needing to be parsed
+ * @returns {Object} Headers parsed into an object
+ */
+module.exports = function parseHeaders(headers) {
+  var parsed = {};
+  var key;
+  var val;
+  var i;
+
+  if (!headers) { return parsed; }
+
+  utils.forEach(headers.split('\n'), function parser(line) {
+    i = line.indexOf(':');
+    key = utils.trim(line.substr(0, i)).toLowerCase();
+    val = utils.trim(line.substr(i + 1));
+
+    if (key) {
+      if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
+        return;
+      }
+      if (key === 'set-cookie') {
+        parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
+      } else {
+        parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
+      }
+    }
+  });
+
+  return parsed;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/parseProtocol.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/parseProtocol.js ***!
+  \*********************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = function parseProtocol(url) {
+  var match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
+  return match && match[1] || '';
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/spread.js":
+/*!**************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/spread.js ***!
+  \**************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+/**
+ * Syntactic sugar for invoking a function and expanding an array for arguments.
+ *
+ * Common use case would be to use `Function.prototype.apply`.
+ *
+ *  ```js
+ *  function f(x, y, z) {}
+ *  var args = [1, 2, 3];
+ *  f.apply(null, args);
+ *  ```
+ *
+ * With `spread` this example can be re-written.
+ *
+ *  ```js
+ *  spread(function(x, y, z) {})([1, 2, 3]);
+ *  ```
+ *
+ * @param {Function} callback
+ * @returns {Function}
+ */
+module.exports = function spread(callback) {
+  return function wrap(arr) {
+    return callback.apply(null, arr);
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/toFormData.js":
+/*!******************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/toFormData.js ***!
+  \******************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var utils = __webpack_require__(/*! ../utils */ "./node_modules/axios/lib/utils.js");
+
+/**
+ * Convert a data object to FormData
+ * @param {Object} obj
+ * @param {?Object} [formData]
+ * @returns {Object}
+ **/
+
+function toFormData(obj, formData) {
+  // eslint-disable-next-line no-param-reassign
+  formData = formData || new FormData();
+
+  var stack = [];
+
+  function convertValue(value) {
+    if (value === null) return '';
+
+    if (utils.isDate(value)) {
+      return value.toISOString();
+    }
+
+    if (utils.isArrayBuffer(value) || utils.isTypedArray(value)) {
+      return typeof Blob === 'function' ? new Blob([value]) : Buffer.from(value);
+    }
+
+    return value;
+  }
+
+  function build(data, parentKey) {
+    if (utils.isPlainObject(data) || utils.isArray(data)) {
+      if (stack.indexOf(data) !== -1) {
+        throw Error('Circular reference detected in ' + parentKey);
+      }
+
+      stack.push(data);
+
+      utils.forEach(data, function each(value, key) {
+        if (utils.isUndefined(value)) return;
+        var fullKey = parentKey ? parentKey + '.' + key : key;
+        var arr;
+
+        if (value && !parentKey && typeof value === 'object') {
+          if (utils.endsWith(key, '{}')) {
+            // eslint-disable-next-line no-param-reassign
+            value = JSON.stringify(value);
+          } else if (utils.endsWith(key, '[]') && (arr = utils.toArray(value))) {
+            // eslint-disable-next-line func-names
+            arr.forEach(function(el) {
+              !utils.isUndefined(el) && formData.append(fullKey, convertValue(el));
+            });
+            return;
+          }
+        }
+
+        build(value, fullKey);
+      });
+
+      stack.pop();
+    } else {
+      formData.append(parentKey, convertValue(data));
+    }
+  }
+
+  build(obj);
+
+  return formData;
+}
+
+module.exports = toFormData;
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/validator.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/validator.js ***!
+  \*****************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var VERSION = (__webpack_require__(/*! ../env/data */ "./node_modules/axios/lib/env/data.js").version);
+var AxiosError = __webpack_require__(/*! ../core/AxiosError */ "./node_modules/axios/lib/core/AxiosError.js");
+
+var validators = {};
+
+// eslint-disable-next-line func-names
+['object', 'boolean', 'number', 'function', 'string', 'symbol'].forEach(function(type, i) {
+  validators[type] = function validator(thing) {
+    return typeof thing === type || 'a' + (i < 1 ? 'n ' : ' ') + type;
+  };
+});
+
+var deprecatedWarnings = {};
+
+/**
+ * Transitional option validator
+ * @param {function|boolean?} validator - set to false if the transitional option has been removed
+ * @param {string?} version - deprecated version / removed since version
+ * @param {string?} message - some message with additional info
+ * @returns {function}
+ */
+validators.transitional = function transitional(validator, version, message) {
+  function formatMessage(opt, desc) {
+    return '[Axios v' + VERSION + '] Transitional option \'' + opt + '\'' + desc + (message ? '. ' + message : '');
+  }
+
+  // eslint-disable-next-line func-names
+  return function(value, opt, opts) {
+    if (validator === false) {
+      throw new AxiosError(
+        formatMessage(opt, ' has been removed' + (version ? ' in ' + version : '')),
+        AxiosError.ERR_DEPRECATED
+      );
+    }
+
+    if (version && !deprecatedWarnings[opt]) {
+      deprecatedWarnings[opt] = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        formatMessage(
+          opt,
+          ' has been deprecated since v' + version + ' and will be removed in the near future'
+        )
+      );
+    }
+
+    return validator ? validator(value, opt, opts) : true;
+  };
+};
+
+/**
+ * Assert object's properties type
+ * @param {object} options
+ * @param {object} schema
+ * @param {boolean?} allowUnknown
+ */
+
+function assertOptions(options, schema, allowUnknown) {
+  if (typeof options !== 'object') {
+    throw new AxiosError('options must be an object', AxiosError.ERR_BAD_OPTION_VALUE);
+  }
+  var keys = Object.keys(options);
+  var i = keys.length;
+  while (i-- > 0) {
+    var opt = keys[i];
+    var validator = schema[opt];
+    if (validator) {
+      var value = options[opt];
+      var result = value === undefined || validator(value, opt, options);
+      if (result !== true) {
+        throw new AxiosError('option ' + opt + ' must be ' + result, AxiosError.ERR_BAD_OPTION_VALUE);
+      }
+      continue;
+    }
+    if (allowUnknown !== true) {
+      throw new AxiosError('Unknown option ' + opt, AxiosError.ERR_BAD_OPTION);
+    }
+  }
+}
+
+module.exports = {
+  assertOptions: assertOptions,
+  validators: validators
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/utils.js":
+/*!*****************************************!*\
+  !*** ./node_modules/axios/lib/utils.js ***!
+  \*****************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var bind = __webpack_require__(/*! ./helpers/bind */ "./node_modules/axios/lib/helpers/bind.js");
+
+// utils is a library of generic helper functions non-specific to axios
+
+var toString = Object.prototype.toString;
+
+// eslint-disable-next-line func-names
+var kindOf = (function(cache) {
+  // eslint-disable-next-line func-names
+  return function(thing) {
+    var str = toString.call(thing);
+    return cache[str] || (cache[str] = str.slice(8, -1).toLowerCase());
+  };
+})(Object.create(null));
+
+function kindOfTest(type) {
+  type = type.toLowerCase();
+  return function isKindOf(thing) {
+    return kindOf(thing) === type;
+  };
+}
+
+/**
+ * Determine if a value is an Array
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an Array, otherwise false
+ */
+function isArray(val) {
+  return Array.isArray(val);
+}
+
+/**
+ * Determine if a value is undefined
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if the value is undefined, otherwise false
+ */
+function isUndefined(val) {
+  return typeof val === 'undefined';
+}
+
+/**
+ * Determine if a value is a Buffer
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Buffer, otherwise false
+ */
+function isBuffer(val) {
+  return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor)
+    && typeof val.constructor.isBuffer === 'function' && val.constructor.isBuffer(val);
+}
+
+/**
+ * Determine if a value is an ArrayBuffer
+ *
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an ArrayBuffer, otherwise false
+ */
+var isArrayBuffer = kindOfTest('ArrayBuffer');
+
+
+/**
+ * Determine if a value is a view on an ArrayBuffer
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a view on an ArrayBuffer, otherwise false
+ */
+function isArrayBufferView(val) {
+  var result;
+  if ((typeof ArrayBuffer !== 'undefined') && (ArrayBuffer.isView)) {
+    result = ArrayBuffer.isView(val);
+  } else {
+    result = (val) && (val.buffer) && (isArrayBuffer(val.buffer));
+  }
+  return result;
+}
+
+/**
+ * Determine if a value is a String
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a String, otherwise false
+ */
+function isString(val) {
+  return typeof val === 'string';
+}
+
+/**
+ * Determine if a value is a Number
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Number, otherwise false
+ */
+function isNumber(val) {
+  return typeof val === 'number';
+}
+
+/**
+ * Determine if a value is an Object
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an Object, otherwise false
+ */
+function isObject(val) {
+  return val !== null && typeof val === 'object';
+}
+
+/**
+ * Determine if a value is a plain Object
+ *
+ * @param {Object} val The value to test
+ * @return {boolean} True if value is a plain Object, otherwise false
+ */
+function isPlainObject(val) {
+  if (kindOf(val) !== 'object') {
+    return false;
+  }
+
+  var prototype = Object.getPrototypeOf(val);
+  return prototype === null || prototype === Object.prototype;
+}
+
+/**
+ * Determine if a value is a Date
+ *
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Date, otherwise false
+ */
+var isDate = kindOfTest('Date');
+
+/**
+ * Determine if a value is a File
+ *
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a File, otherwise false
+ */
+var isFile = kindOfTest('File');
+
+/**
+ * Determine if a value is a Blob
+ *
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Blob, otherwise false
+ */
+var isBlob = kindOfTest('Blob');
+
+/**
+ * Determine if a value is a FileList
+ *
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a File, otherwise false
+ */
+var isFileList = kindOfTest('FileList');
+
+/**
+ * Determine if a value is a Function
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Function, otherwise false
+ */
+function isFunction(val) {
+  return toString.call(val) === '[object Function]';
+}
+
+/**
+ * Determine if a value is a Stream
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Stream, otherwise false
+ */
+function isStream(val) {
+  return isObject(val) && isFunction(val.pipe);
+}
+
+/**
+ * Determine if a value is a FormData
+ *
+ * @param {Object} thing The value to test
+ * @returns {boolean} True if value is an FormData, otherwise false
+ */
+function isFormData(thing) {
+  var pattern = '[object FormData]';
+  return thing && (
+    (typeof FormData === 'function' && thing instanceof FormData) ||
+    toString.call(thing) === pattern ||
+    (isFunction(thing.toString) && thing.toString() === pattern)
+  );
+}
+
+/**
+ * Determine if a value is a URLSearchParams object
+ * @function
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a URLSearchParams object, otherwise false
+ */
+var isURLSearchParams = kindOfTest('URLSearchParams');
+
+/**
+ * Trim excess whitespace off the beginning and end of a string
+ *
+ * @param {String} str The String to trim
+ * @returns {String} The String freed of excess whitespace
+ */
+function trim(str) {
+  return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, '');
+}
+
+/**
+ * Determine if we're running in a standard browser environment
+ *
+ * This allows axios to run in a web worker, and react-native.
+ * Both environments support XMLHttpRequest, but not fully standard globals.
+ *
+ * web workers:
+ *  typeof window -> undefined
+ *  typeof document -> undefined
+ *
+ * react-native:
+ *  navigator.product -> 'ReactNative'
+ * nativescript
+ *  navigator.product -> 'NativeScript' or 'NS'
+ */
+function isStandardBrowserEnv() {
+  if (typeof navigator !== 'undefined' && (navigator.product === 'ReactNative' ||
+                                           navigator.product === 'NativeScript' ||
+                                           navigator.product === 'NS')) {
+    return false;
+  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof document !== 'undefined'
+  );
+}
+
+/**
+ * Iterate over an Array or an Object invoking a function for each item.
+ *
+ * If `obj` is an Array callback will be called passing
+ * the value, index, and complete array for each item.
+ *
+ * If 'obj' is an Object callback will be called passing
+ * the value, key, and complete object for each property.
+ *
+ * @param {Object|Array} obj The object to iterate
+ * @param {Function} fn The callback to invoke for each item
+ */
+function forEach(obj, fn) {
+  // Don't bother if no value provided
+  if (obj === null || typeof obj === 'undefined') {
+    return;
+  }
+
+  // Force an array if not already something iterable
+  if (typeof obj !== 'object') {
+    /*eslint no-param-reassign:0*/
+    obj = [obj];
+  }
+
+  if (isArray(obj)) {
+    // Iterate over array values
+    for (var i = 0, l = obj.length; i < l; i++) {
+      fn.call(null, obj[i], i, obj);
+    }
+  } else {
+    // Iterate over object keys
+    for (var key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        fn.call(null, obj[key], key, obj);
+      }
+    }
+  }
+}
+
+/**
+ * Accepts varargs expecting each argument to be an object, then
+ * immutably merges the properties of each object and returns result.
+ *
+ * When multiple objects contain the same key the later object in
+ * the arguments list will take precedence.
+ *
+ * Example:
+ *
+ * ```js
+ * var result = merge({foo: 123}, {foo: 456});
+ * console.log(result.foo); // outputs 456
+ * ```
+ *
+ * @param {Object} obj1 Object to merge
+ * @returns {Object} Result of all merge properties
+ */
+function merge(/* obj1, obj2, obj3, ... */) {
+  var result = {};
+  function assignValue(val, key) {
+    if (isPlainObject(result[key]) && isPlainObject(val)) {
+      result[key] = merge(result[key], val);
+    } else if (isPlainObject(val)) {
+      result[key] = merge({}, val);
+    } else if (isArray(val)) {
+      result[key] = val.slice();
+    } else {
+      result[key] = val;
+    }
+  }
+
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    forEach(arguments[i], assignValue);
+  }
+  return result;
+}
+
+/**
+ * Extends object a by mutably adding to it the properties of object b.
+ *
+ * @param {Object} a The object to be extended
+ * @param {Object} b The object to copy properties from
+ * @param {Object} thisArg The object to bind function to
+ * @return {Object} The resulting value of object a
+ */
+function extend(a, b, thisArg) {
+  forEach(b, function assignValue(val, key) {
+    if (thisArg && typeof val === 'function') {
+      a[key] = bind(val, thisArg);
+    } else {
+      a[key] = val;
+    }
+  });
+  return a;
+}
+
+/**
+ * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
+ *
+ * @param {string} content with BOM
+ * @return {string} content value without BOM
+ */
+function stripBOM(content) {
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1);
+  }
+  return content;
+}
+
+/**
+ * Inherit the prototype methods from one constructor into another
+ * @param {function} constructor
+ * @param {function} superConstructor
+ * @param {object} [props]
+ * @param {object} [descriptors]
+ */
+
+function inherits(constructor, superConstructor, props, descriptors) {
+  constructor.prototype = Object.create(superConstructor.prototype, descriptors);
+  constructor.prototype.constructor = constructor;
+  props && Object.assign(constructor.prototype, props);
+}
+
+/**
+ * Resolve object with deep prototype chain to a flat object
+ * @param {Object} sourceObj source object
+ * @param {Object} [destObj]
+ * @param {Function} [filter]
+ * @returns {Object}
+ */
+
+function toFlatObject(sourceObj, destObj, filter) {
+  var props;
+  var i;
+  var prop;
+  var merged = {};
+
+  destObj = destObj || {};
+
+  do {
+    props = Object.getOwnPropertyNames(sourceObj);
+    i = props.length;
+    while (i-- > 0) {
+      prop = props[i];
+      if (!merged[prop]) {
+        destObj[prop] = sourceObj[prop];
+        merged[prop] = true;
+      }
+    }
+    sourceObj = Object.getPrototypeOf(sourceObj);
+  } while (sourceObj && (!filter || filter(sourceObj, destObj)) && sourceObj !== Object.prototype);
+
+  return destObj;
+}
+
+/*
+ * determines whether a string ends with the characters of a specified string
+ * @param {String} str
+ * @param {String} searchString
+ * @param {Number} [position= 0]
+ * @returns {boolean}
+ */
+function endsWith(str, searchString, position) {
+  str = String(str);
+  if (position === undefined || position > str.length) {
+    position = str.length;
+  }
+  position -= searchString.length;
+  var lastIndex = str.indexOf(searchString, position);
+  return lastIndex !== -1 && lastIndex === position;
+}
+
+
+/**
+ * Returns new array from array like object
+ * @param {*} [thing]
+ * @returns {Array}
+ */
+function toArray(thing) {
+  if (!thing) return null;
+  var i = thing.length;
+  if (isUndefined(i)) return null;
+  var arr = new Array(i);
+  while (i-- > 0) {
+    arr[i] = thing[i];
+  }
+  return arr;
+}
+
+// eslint-disable-next-line func-names
+var isTypedArray = (function(TypedArray) {
+  // eslint-disable-next-line func-names
+  return function(thing) {
+    return TypedArray && thing instanceof TypedArray;
+  };
+})(typeof Uint8Array !== 'undefined' && Object.getPrototypeOf(Uint8Array));
+
+module.exports = {
+  isArray: isArray,
+  isArrayBuffer: isArrayBuffer,
+  isBuffer: isBuffer,
+  isFormData: isFormData,
+  isArrayBufferView: isArrayBufferView,
+  isString: isString,
+  isNumber: isNumber,
+  isObject: isObject,
+  isPlainObject: isPlainObject,
+  isUndefined: isUndefined,
+  isDate: isDate,
+  isFile: isFile,
+  isBlob: isBlob,
+  isFunction: isFunction,
+  isStream: isStream,
+  isURLSearchParams: isURLSearchParams,
+  isStandardBrowserEnv: isStandardBrowserEnv,
+  forEach: forEach,
+  merge: merge,
+  extend: extend,
+  trim: trim,
+  stripBOM: stripBOM,
+  inherits: inherits,
+  toFlatObject: toFlatObject,
+  kindOf: kindOf,
+  kindOfTest: kindOfTest,
+  endsWith: endsWith,
+  toArray: toArray,
+  isTypedArray: isTypedArray,
+  isFileList: isFileList
+};
+
+
+/***/ }),
 
 /***/ "./src/App.js":
 /*!********************!*\
@@ -8,6 +2468,7 @@
   \********************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -67,6 +2528,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \***************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -120,6 +2582,7 @@ var closeDrawer = function closeDrawer() {
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -179,6 +2642,7 @@ var Footer = function Footer() {
   \*******************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -286,6 +2750,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \**********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -410,6 +2875,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -547,6 +3013,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \*****************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -652,6 +3119,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \*************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -702,6 +3170,7 @@ var Header = function Header() {
   \************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -727,6 +3196,7 @@ var Inter = function Inter() {
   \***********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -772,6 +3242,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \**************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -796,15 +3267,18 @@ var Project = function Project() {
   \*****************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/index.js");
 /* harmony import */ var react_redux__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
 /* harmony import */ var _redux_Shopping_shopping_actions__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../redux/Shopping/shopping-actions */ "./src/redux/Shopping/shopping-actions.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_3__);
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -822,6 +3296,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 
 
+
 var Product = function Product(_ref) {
   var productData = _ref.productData,
       addToCart = _ref.addToCart,
@@ -831,7 +3306,12 @@ var Product = function Product(_ref) {
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("16x16cm"),
       _useState2 = _slicedToArray(_useState, 2),
       dimension = _useState2[0],
-      setDimension = _useState2[1]; // const [supportButton,setSupportButton] = useState("Da")
+      setDimension = _useState2[1];
+
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+      _useState4 = _slicedToArray(_useState3, 2),
+      images = _useState4[0],
+      setImages = _useState4[1]; // const [supportButton,setSupportButton] = useState("Da")
   // const [highlight1, setHighlight1] = useState(false)
   // const [highlight2, setHighlight2] = useState(false)
   // const supportDA = () => {
@@ -869,7 +3349,7 @@ var Product = function Product(_ref) {
 
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "item ".concat(productData.display, " ").concat(productData.tip)
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
     to: "/product/".concat(productData.id)
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
     onClick: function onClick() {
@@ -903,7 +3383,7 @@ var Product = function Product(_ref) {
     onClick: function onClick() {
       return loadCurrentItem(productData);
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
     to: "/product/".concat(productData.id)
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", null, "Personalizeaza"))))));
 };
@@ -942,10 +3422,14 @@ var mapStateToProps = function mapStateToProps(state) {
   \*********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+
 var shopItemsData = [{
   key: "1",
   id: "jfhgbvnscs",
@@ -954,7 +3438,7 @@ var shopItemsData = [{
   name: "Copacul",
   price: 45,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.43",
   dimension: "",
   support: "",
@@ -968,7 +3452,7 @@ var shopItemsData = [{
   name: "Office Shirt",
   price: 100,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.45",
   dimension: "",
   support: "",
@@ -982,7 +3466,7 @@ var shopItemsData = [{
   name: "T Shirt",
   price: 25,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.12",
   dimension: "",
   support: "",
@@ -996,7 +3480,7 @@ var shopItemsData = [{
   name: "Mens Suit",
   price: 300,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.53",
   dimension: "",
   support: "",
@@ -1010,7 +3494,7 @@ var shopItemsData = [{
   name: "Mens Suit",
   price: 300,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.25",
   dimension: "",
   support: "",
@@ -1024,7 +3508,7 @@ var shopItemsData = [{
   name: "Mens Suit",
   price: 300,
   desc: "Lorem ipsum dolor sit amet consectetur",
-  img: "images/produs1.png",
+  img: "https://res.cloudinary.com/radu122/image/upload/v1657017690/ateliermaxim/produs1_whrnlc.jpg",
   greutate: "0.44",
   dimension: "none",
   support: "",
@@ -1041,6 +3525,7 @@ var shopItemsData = [{
   \************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "addDimension": () => (/* binding */ addDimension),
@@ -1130,6 +3615,7 @@ var addGravura2 = function addGravura2(itemID, gravura2) {
   \************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1257,6 +3743,7 @@ var shopReducer = function shopReducer() {
   \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "ADD_DIMENSION_ITEM": () => (/* binding */ ADD_DIMENSION_ITEM),
@@ -1285,6 +3772,7 @@ var ADD_GRAVURA_2 = "GRAVURA_2";
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1306,6 +3794,7 @@ var rootReducer = (0,redux__WEBPACK_IMPORTED_MODULE_1__.combineReducers)({
   \****************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1327,6 +3816,7 @@ var store = (0,redux__WEBPACK_IMPORTED_MODULE_2__.legacy_createStore)(_rootReduc
   \*****************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1517,6 +4007,7 @@ var mapStateToProps = function mapStateToProps(state) {
   \***********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1555,6 +4046,7 @@ var HomeScreen = function HomeScreen() {
   \***********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1890,6 +4382,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
   \******************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
@@ -1944,6 +4437,7 @@ function toVal(mix) {
   \**************************************************************************************************/
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1970,6 +4464,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, ":root {\n  --toastify-color-light: #ff
   \***********************************************************/
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1983,7 +4478,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "/* Box Model Hack */\r\n:root{  \r\n    \r\n    --toastify-color-success: #346751;\r\n    --toastify-color-progress-light: linear-gradient(\r\n      to right,\r\n      #346751,\r\n      #5ac8fa,\r\n      #007aff,\r\n      #34aadc,\r\n      #5856d6,\r\n      #ff2d55\r\n    );\r\n  }\r\n\r\n\r\n\r\n\r\n* {\r\n    box-sizing: border-box;\r\n}\r\n\r\n/* Clear fix hack */\r\n.clearfix:after {\r\n    content: \".\";\r\n    display: block;\r\n    clear: both;\r\n    visibility: hidden;\r\n    line-height: 0;\r\n    height: 0;\r\n}\r\n\r\n.clear {\r\n   clear: both;\r\n}\r\n\r\nhtml {\r\n    background-color:rgba(23, 23, 23, 0.966);\r\n    scroll-behavior: smooth;\r\n    font-size:16px;\r\n}\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n.container-root {\r\n    display: grid;\r\n    grid-template-columns: 1fr 1fr 1fr 1fr;\r\n    grid-template-rows: 0.1fr 0.1fr 0.1fr 0.5fr 0.1fr 0.05fr;\r\n    grid-template-areas:\r\n      \"nav nav nav nav\"\r\n      \"header header header header\"\r\n      \"inter inter inter inter\"\r\n      \"main main main main\"\r\n      \"project project project project\"\r\n      \"footer footer footer footer\";\r\n    grid-gap: 0.2rem;\r\n    color:white;\r\n    height: 100%;\r\n    text-rendering: optimizeLegibility;\r\n    height:100vh;\r\n}\r\n\r\nnav {\r\n    grid-area: nav;\r\n}\r\n\r\nheader {\r\n    grid-area: header;\r\n    height:90vh;\r\n    \r\n}\r\n\r\n.inter {\r\n    grid-area: inter;\r\n}\r\n\r\nmain {\r\n    grid-area: main;\r\n    margin:0 6%;\r\n    \r\n}\r\n\r\n.project {\r\n    grid-area: project;\r\n    margin:0 6%;\r\n}\r\nfooter {\r\n    grid-area: footer;\r\n}\r\n\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* BASE STYLES\r\n/*******************************************/\r\n\r\nbody {\r\n    font-family:\"Open Sans\", sans-serif;\r\n    font-size: 16px;\r\n    line-height:1.5;\r\n    color:white;\r\n    text-rendering: optimizeLegibility;\r\n}\r\n\r\na {\r\n    text-decoration:none;\r\n    color:inherit;\r\n}\r\n\r\nul {\r\n    list-style-type: none;\r\n}\r\n\r\na:visited {\r\n    color:inherit;\r\n}\r\n\r\n\r\n.noDisplay {\r\n    display: none;\r\n}\r\n\r\n.display {\r\n    display:contents;\r\n}\r\n*:focus {\r\n    outline: 0 !important;\r\n}\r\nbutton {\r\n    outline: none;\r\n    border-style:none;\r\n}\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\nnav .container {\r\n    height: 100%;\r\n    padding-top:5vh;\r\n    border-bottom: solid 1px rgba(255,255,255,0.7);\r\n    \r\n}\r\nnav .container ul {\r\n    display:grid;\r\n    grid-template-columns:1fr 2fr 1fr ;\r\n    grid-template-rows: auto;\r\n    grid-template-areas: \"mail logo cont\";\r\n    margin-bottom:1vh;\r\n}\r\n\r\n.logo img{\r\n    width:45px;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    margin-top:-18px;\r\n    \r\n}\r\n\r\n.contLogo {\r\n    grid-area:logo;\r\n    justify-self:center;\r\n}\r\n.rightSide span {\r\n    display:none;\r\n}\r\n.rightSide {\r\n    grid-area: cont;\r\n    display:flex;\r\n    align-self: center;\r\n    font-size:0.9rem;\r\n    justify-content: end;\r\n}\r\n.cart{\r\n    display:flex;\r\n}\r\n\r\n.fa-cart-shopping{\r\n    padding-right:0.8rem;\r\n    margin-top:0.2rem;\r\n}\r\n\r\n.leftSide {\r\n    grid-area:mail;\r\n    display:none;\r\n}\r\n\r\n.menu {\r\n    grid-area:mail;\r\n    padding-left:10px;\r\n    font-size:1.2rem;\r\n}\r\n.back {\r\n    display:none;\r\n}\r\n\r\n.cartAmount {\r\n    margin-left: -5px;\r\n}\r\n\r\n.cart{\r\n    display:flex;\r\n    padding-right: 10px;\r\n}\r\n\r\n.mailMenu {\r\n    position:absolute;\r\n    top:65px;\r\n    background-color: white;\r\n    color:black;\r\n    font-size:0.9rem;\r\n    padding:2px 2%;\r\n    transition: opacity 1s ease-out;\r\n}\r\n\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n.headerhomeScreen {\r\n    padding-top:30px;\r\n    font-family: 'Cinzel', serif;\r\n    font-size:25px;\r\n    font-weight:500;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.headerhomeScreen img {\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.headerhomeScreen .firstSection {\r\n    width:50%;\r\n    max-width:400px;\r\n    min-width:200px;\r\n    position:absolute;\r\n    left:37%;\r\n    top:15vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    padding-top:10px;\r\n    z-index: -1;\r\n    margin-top:50px;\r\n}\r\n\r\n.headerhomeScreen .secondSection {\r\n    position:absolute;\r\n    left:10%;\r\n    top:45vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    font-size: calc(26px + 6 * ((100vw - 320px) / 250))\r\n}\r\n\r\n.veziProdusle a {\r\n    display: block;\r\n    height: 20px;;\r\n    width: fit-content;\r\n}\r\n\r\n.veziProduseleSpan {\r\n    display:flex;\r\n    background-color: white;\r\n    outline: 0;\r\n    border: black solid 1px;\r\n    height: 30px;\r\n    font-family: 'Niramit', sans-serif;\r\n    color:black;\r\n    border-radius: 5px;\r\n    font-weight: 500;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 900));\r\n    width:70%;\r\n    justify-content: center;\r\n    align-items: center;\r\n    padding-top:2px;\r\n\r\n}\r\n\r\n\r\n.headerhomeScreen .lastSection {\r\n    position:absolute;\r\n    left:auto;\r\n    top:auto;\r\n    bottom:25px;\r\n    right:25px;\r\n    font-size:0.9rem;\r\n    letter-spacing: 1px;\r\n    \r\n}\r\n\r\n.headerhomeScreen .lastSection i {\r\n    padding-left:7px;\r\n}\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n.inter {\r\n    white-space: nowrap;\r\n    text-transform: uppercase;\r\n    font-weight: 600;\r\n    margin-bottom: 10px;\r\n    padding-top:20px;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center ;\r\n}\r\n\r\n.inter h2 {\r\n    display:inline-block;\r\n    width:fit-content;\r\n    padding:0px 10px;\r\n}\r\n\r\n\r\n.inter h2:hover {\r\n    cursor: pointer;\r\n}\r\n\r\n.inter h2:after {\r\n    display:block;\r\n    content: '';\r\n    border-bottom: solid 2px white; \r\n    transform: scaleX(0);  \r\n    transition: transform 250ms ease-in-out;\r\n}\r\n.inter h2:hover:after { \r\n    transform: scaleX(1); \r\n}\r\n\r\n.inter h2:after{  \r\n    transform-origin: 0% 50%; \r\n}\r\n\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n.shop {\r\n    display:grid;\r\n    grid-template-columns: repeat(2, 1fr);\r\n    column-gap:20px;\r\n    row-gap: 20px;\r\n    padding-bottom:20px;\r\n    border-bottom:rgba(255, 255, 255, 0.555) 1px solid;\r\n    text-align: center;\r\n}\r\n.item>div {\r\n    background:rgba(0, 0, 0, 0.425);\r\n    padding:8px 10px 20px;\r\n    height: fit-content;\r\n    font-size:calc(10px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center;\r\n    border-radius: 5px;\r\n}\r\n.shop img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.shop p{\r\n    display: inline-block;\r\n    padding:10px 0 2px 0;\r\n    text-align: center;\r\n    font-weight:500;\r\n}\r\n\r\n.priceQuantity .buttons {\r\n    display:none;\r\n    justify-content: center;\r\n}\r\n\r\n.productButtons {\r\n    display:flex;\r\n    justify-content: space-around;\r\n    align-items: center;\r\n    padding-top:10px;\r\n}\r\n.productButtons a{\r\n    display:block;\r\n    height: fit-content;\r\n}\r\n.productButtons button {\r\n    height:calc(25px + 6 * ((100vw - 320px) / 200));\r\n    font-size:calc(6px + 6 * ((100vw - 320px) / 200));\r\n    font-weight: 600;\r\n    color:white;\r\n    border-radius: 7px;\r\n    cursor: pointer;\r\n    border:none;\r\n    width:50%;\r\n}\r\n.productButtons button:first-child {\r\n    background-color: #346751;\r\n    margin-right:5%\r\n}\r\n\r\n.productButtons button:first-child:hover {\r\n    background-color: #2c5744;\r\n}\r\n.productButtons button:last-child {\r\n    background-color:#D65A31 ;\r\n}\r\n\r\n.productButtons button:last-child:hover {\r\n    background-color:rgb(180, 86, 43) ; \r\n}\r\n\r\n.productDetailsDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.productDetailsDimension,\r\n.productDetailsDimension * {\r\n    display:flex;\r\n    width:75px;\r\n    position: relative;\r\n\r\n}\r\n.productDetailsDimension {\r\n    background-color: #E6E6E6;\r\n    height:19px;\r\n    border-radius: 5px;\r\n    margin:5% 0;\r\n}\r\n.productDetailsDimension select {\r\n    position:relative;\r\n    bottom:1px;\r\n    font-size: 0.6rem;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:12px;\r\n\r\n}\r\n.productDetailsDimension select:active, .productDetailsDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.productDetailsDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n\r\n.cartDrawer {\r\n    display:none;\r\n    position:fixed;\r\n    height:100vh;\r\n    width:300px;\r\n    top:0;\r\n    right:0;\r\n    background-color: white;\r\n    color:black;\r\n    overflow: scroll;\r\n    overflow-x: hidden;\r\n    flex-direction: column;\r\n    -webkit-user-select: none;\r\n    -moz-user-select: none;\r\n    -ms-user-select: none;\r\n    user-select: none;\r\n}\r\n.drawerContainer {\r\n    position: fixed;\r\n    display: none;\r\n    width: 100%;\r\n    height: 100%;\r\n    top: 0;\r\n    left: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    background-color: rgba(0,0,0,0.5);\r\n    z-index: 2;\r\n}\r\n\r\n.cartDrawer::-webkit-scrollbar {\r\n    width:0.5rem;\r\n}\r\n.cartDrawer::-webkit-scrollbar-track {\r\n    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);\r\n}\r\n.cartDrawer::-webkit-scrollbar-thumb {\r\n    background-color: darkgrey;\r\n    outline: 1px solid slategrey;\r\n}\r\n\r\n.titleCartDrawer {\r\n    width:50%;\r\n    margin: 10px auto;\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n    font-weight: 600;\r\n}\r\n\r\n.cartDrawer main {\r\n    margin:5% 5% 0%;\r\n    \r\n}\r\n.closeDrawerSection {\r\n    display:flex;\r\n    justify-content: end;\r\n    margin:10px\r\n}\r\n.closeDrawer {\r\n    \r\n    cursor:pointer;\r\n    background-color: white;\r\n    border: none;\r\n}\r\n.cartDrawerDetails {\r\n    padding-top:5%;\r\n    padding-bottom: 1%;\r\n    grid-template-columns: 3fr 1fr 1fr\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    padding-left:5px;\r\n}\r\n\r\n\r\n.cartDrawerDetails div {\r\n    text-align: center;\r\n    align-self: center;\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    display:flex;\r\n}\r\n.cartProductImg {\r\n    display:flex;\r\n    width:40%;\r\n    justify-content: center;\r\n    \r\n}\r\n.cartProductImg img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n.cartProduct {\r\n    display:flex;\r\n    width:100%;\r\n}\r\n\r\n.cartProduct p {\r\n    width:95%;\r\n    font-weight: 500;\r\n}\r\n.cartProductDescCant {\r\n    padding-left: 5%;\r\n}\r\n.cart-item {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    margin-bottom:5%;\r\n    flex-direction: column;\r\n    border-bottom: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-bottom:10px;\r\n    font-size:0.9rem;\r\n}\r\n.cart-item:first-child {\r\n    border-top: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-top:10px;\r\n}\r\n.cartDrawer .quantity {\r\n    width:50px;\r\n    height:20px;\r\n    border:none;\r\n    text-align: center;\r\n    font-size:0.9rem;\r\n    border:1px rgba(128, 128, 128, 0.445) solid\r\n}\r\n\r\n.cartDrawerPriceSpan {\r\n    color:gray;\r\n    padding-right:3px;\r\n}\r\n\r\n.cartDrawer .buttons {\r\n    display:flex;\r\n}\r\n\r\n.xInDrawer {\r\n    align-self: end;\r\n    cursor: pointer;\r\n    order:-1\r\n}\r\n\r\n.totalDrawer {\r\n    font-size:1rem;\r\n    width:60%;\r\n    margin:0 auto;\r\n    text-align: center;\r\n}\r\n.totalDrawer span {\r\n    display:block\r\n}\r\n\r\n.buttonCartDrawer {\r\n    background-color:rgb(255, 106, 61);\r\n    height:35px;\r\n    font-size:1.2rem;\r\n    color:white;\r\n    font-weight: 600;\r\n    margin-top:20px;\r\n    padding:0 40px;;\r\n    border-radius:8px;\r\n    border-color:white;\r\n    cursor:pointer;\r\n}\r\n\r\n.buttonDrawerContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n    align-items: center;\r\n}\r\n.buttonCartDrawer:hover {\r\n    background-color:rgb(235, 96, 54); ;\r\n}\r\n\r\n.containerC {\r\n    text-align: center;\r\n}\r\n\r\n\r\n.cartDrawer {\r\n    transition: left 0.3s ease-in-out;\r\n}\r\n\r\n.cartDrawer:focus-within {\r\n    right: 0;\r\n}\r\n\r\n.cartDrawer:focus {\r\n    outline: 0;\r\n}\r\n\r\ninput[type=number] {\r\n    /*for absolutely positioning spinners*/\r\n    position: relative; \r\n    padding: 5px;\r\n    padding-right: 25px;\r\n}\r\n\r\ninput[type=number]::-webkit-inner-spin-button,\r\ninput[type=number]::-webkit-outer-spin-button {\r\n    opacity: 1;\r\n}\r\n\r\ninput[type=number]::-webkit-outer-spin-button, \r\ninput[type=number]::-webkit-inner-spin-button {\r\n    -webkit-appearance: inner-spin-button !important;\r\n    width: 20px;\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    height: 100%;\r\n}\r\n\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n\r\n.project {\r\n    text-align: center;\r\n    color:white;\r\n    padding:20px 0;\r\n}\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n.cartContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n\r\n.headerCart  {\r\n    display:flex;\r\n    margin:1% 5% 5%;\r\n    justify-content: center;\r\n    align-items:center ;\r\n    font-size:1.2rem;\r\n    height: fit-content;\r\n}\r\n.cartContainer footer {\r\n    margin-top: auto;\r\n}\r\n\r\n.totalCart span {\r\n    display:block;\r\n}\r\n\r\n.emptyCart {\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.cartItemCartPage {\r\n    display:flex;\r\n    flex-direction: column;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin-bottom: 25px;\r\n}\r\n.xInCart {\r\n    order:-1;\r\n    text-align: end;\r\n    padding-bottom: 10px;\r\n    margin-top:-5px;\r\n    font-size:1rem;\r\n}\r\n.cartImg img{\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.quantityCartPage {\r\n    width:50px;\r\n    display:flex;\r\n    align-items: center;\r\n}\r\n.descP {\r\n    font-weight: 600;\r\n}\r\n\r\n.backCart {\r\n    width:fit-content;\r\n    margin:1% 5% 0;\r\n    font-size: 0.9rem;\r\n    cursor:pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.quantityCartPage input[type=number] {\r\n    padding-block:2px;\r\n    text-align: center;\r\n    height:19px;\r\n    margin-left:5px;\r\n}\r\n\r\n.cartPagePriceSpan {\r\n    color:lightgrey;\r\n    font-size:0.9rem\r\n}\r\n.priceCartPage {\r\n    color:#f86837;\r\n    font-size:1.1rem;\r\n}\r\n.detailsCartPage {\r\n    display:flex;\r\n    justify-content: end;\r\n}\r\n.shipping {\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin:0 5%;\r\n}\r\n\r\n.shipping h2:first-child{\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n.personalInfo h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.personalInfo span {\r\n    display:block;\r\n    text-transform: uppercase;\r\n    margin-top:10px;\r\n    \r\n}\r\n.personalInfo input {\r\n    all:unset;\r\n    width: 95%;\r\n    height: 23px;\r\n    background-color: rgb(240, 243, 247);\r\n    color:black;\r\n    padding-left:10px;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.payment {\r\n    margin:5% 5%;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n}\r\n\r\n.facturare {\r\n    margin-top:10px;\r\n    \r\n}\r\n.payment h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n\r\n.totalCart {\r\n    margin:5%;\r\n    padding:5%;\r\n    border:1px solid white;\r\n    margin-block:25px;\r\n    font-size:0.9rem;\r\n    border-radius: 10px;\r\n\r\n}\r\n\r\n.totalCart h3 {\r\n    font-size:1.2rem;\r\n    text-align: center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.totalCart ul {\r\n    margin-bottom:20px;\r\n}\r\n.totalCart ul li span {\r\n    display:inline;\r\n}\r\n.totalCart > span {\r\n    font-size: 1.1rem;\r\n    text-align: center;\r\n}\r\n.paymentButton {\r\n    display:flex;\r\n    justify-content: center;\r\n    margin-bottom:25px;\r\n}\r\n.checkout {\r\n    background-color:#ee693d;\r\n    outline:0;\r\n    border:0;\r\n    width:160px;\r\n    color:rgba(255, 255, 255, 0.863);\r\n    height:35px;\r\n    border-radius:5px;\r\n    font-size:1.1rem;\r\n    font-weight: 600;\r\n    cursor:pointer;\r\n}\r\n\r\n.checkout:hover {\r\n    background-color:#db5c32;\r\n}\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* Single Item\r\n/*******************************************/\r\n\r\n\r\n.singleItemMain {\r\n    margin:2% 10% 5%;\r\n    color: white(0, 0, 0, 0.829);\r\n}\r\n.singleItemContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n.singleItemContainer footer {\r\n    margin-top: auto;\r\n}\r\n.firstSectionProdus img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n\r\n}\r\n\r\n.secondSectionProdus h1 {\r\n    text-align: center;\r\n    font-size:1.7rem;\r\n    font-weight: 700;\r\n    margin-bottom: 50px;\r\n}\r\n\r\n.secondSectionProdus input {\r\n    width:22px;\r\n    height:19px;\r\n    text-align: center;\r\n    border-radius:0px;\r\n    outline: 0;\r\n    border: 0;\r\n}\r\n\r\n.secondSectionProdus ul li {\r\n    display:grid;\r\n    grid-template-columns: 1fr 1fr 1fr;\r\n    grid-template-areas:\"left . right\";\r\n    margin-bottom: 10px;\r\n    border-bottom: 2px dotted lightgrey;\r\n    padding-bottom: 9px;\r\n    \r\n}\r\n\r\n.leftProduct {\r\n    grid-area:left;\r\n} \r\n.rightProduct {\r\n    grid-area:right;\r\n    justify-self: center;\r\n}\r\n\r\n.greutate {\r\n    font-size: 0.8rem;\r\n    font-weight: 400;\r\n}\r\n#gravura1,#gravura2 {\r\n    display:flex;\r\n    \r\n    align-items: center;\r\n}\r\n#gravura1 .leftProduct, #gravura2 .leftProduct {\r\n    width:fit-content;\r\n    padding-right:10px;\r\n    white-space: nowrap\r\n}\r\n\r\n#gravura1 .rightProduct, #gravura2 .rightProduct {\r\n    width:50%;\r\n}\r\n\r\n#gravura1 input, #gravura2 input {\r\n    width:80%;\r\n    background-color:inherit;\r\n    border-bottom: 1px solid white;\r\n    color:white;\r\n    text-align: start;\r\n    padding-left: 5px;\r\n}\r\n#custom-select {\r\n    display:flex;\r\n    justify-content: space-between;\r\n}\r\n#custom-select .rightProduct {\r\n    \r\n    justify-self: center;\r\n}\r\n\r\n#custom-select button:first-child {\r\n    margin-right:-2px;\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n\r\n#custom-select button:nth-child(2){\r\n    border-radius: 0;\r\n}\r\n\r\n\r\n.lastSpan {\r\n    display: block;\r\n}\r\n\r\n.lastSectionProdus {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    text-align: center;\r\n    align-items: center;\r\n    margin-bottom:50px;\r\n}\r\n\r\n.lastSectionProdus div {\r\n    display:flex;\r\n    text-align: center;\r\n    align-items: center;\r\n}\r\n\r\n.lastSectionProdus div span {\r\n    color:grey;\r\n}\r\n\r\n.lastSectionProdus h3 {\r\n    color:#FF7700;\r\n    font-size:1.7rem;\r\n    font-weight: 500;\r\n    padding-right: 10px;\r\n}\r\n.secondSectionProdus li > span {\r\n    font-weight: 600;\r\n}\r\n\r\n.cartAdd {\r\n    background-color: #FF7700;\r\n    color: white;\r\n    padding:10px;\r\n    border-radius:5px;\r\n    cursor:pointer;\r\n}\r\n\r\n.support button {\r\n    background: #E6E6E6;\r\n    border: 1px solid black;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n    padding:5px 10px;\r\n    text-align: center;\r\n}\r\n\r\n.support button:focus {\r\n    background: #e5e5e5;\r\n    outline: none;\r\n    -webkit-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n       -moz-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n            box-shadow: inset 0px 0px 5px #c1c1c1;\r\n}\r\n\r\n\r\n.support button:first-child {\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n.support button:last-child {\r\n    margin-left:-2px;\r\n    border-top-left-radius: 0;\r\n    border-bottom-left-radius: 0;\r\n}\r\n\r\n\r\n.quantity {\r\n    display:flex;\r\n    justify-content: center;\r\n    \r\n}\r\n\r\n.quantityButtons {\r\n    padding-left:5px;\r\n    margin-top:-1px;\r\n}\r\n.quantityButtons input {\r\n    width:25px;\r\n}\r\n.quantity input[value] {\r\n    font-size:0.5rem;\r\n    text-align: center;\r\n    border-radius: 0;\r\n}\r\n#custom-select button:focus {\r\n    background-color:white\r\n}\r\n#custom-select button:active {\r\n    background-color: #c1c1c1;\r\n}\r\n\r\n#custom-select .rightProduct {\r\n    display: flex;\r\n    justify-content:center;\r\n}\r\n.singleItemDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.singleItemDimension,\r\n.singleItemDimension * {\r\n    width:85px;\r\n    height:25px;\r\n    position: relative;\r\n    \r\n}\r\n.singleItemDimension {\r\n    position: relative;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    \r\n}\r\n.singleItemDimension select {\r\n    position:relative;\r\n    bottom:2px;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:5px;\r\n    font-size:0.8rem;\r\n}\r\n.singleItemDimension select:active, .singleItemDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.singleItemDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n\r\n.backSingleItem {\r\n    white-space: nowrap;\r\n    width:fit-content;\r\n    margin:1% 5%;\r\n}\r\n/******************************************\r\n/* Single Product\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n\r\nfooter {\r\n    background-color: #346751 ;\r\n    height:200px;    \r\n    color:black;\r\n  \r\n}\r\n\r\n.footer {\r\n    height:100%;\r\n    margin:0 10%;\r\n    padding-top:2%;\r\n}\r\n\r\nfooter a, footer span {\r\n    display:inline-block;\r\n}\r\n\r\nfooter h4 {\r\n    font-weight:800;\r\n    font-size:1.6rem;\r\n    text-align: center;\r\n}\r\n.titleFooter{\r\n    text-align: center;\r\n}\r\n.footerOne {\r\n    text-align: center;\r\n    font-weight: 500;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.footerTwo {\r\n    text-align:center;\r\n    font-size:1.4rem;\r\n}\r\n\r\n.footerThree {\r\n    margin-top:3%;\r\n    text-align: center;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.footerTwo :not(:last-child){\r\n    padding-right: 10px;\r\n}\r\n\r\n.footerOne :first-child {\r\n    padding-right:10px;\r\n}\r\n\r\n.footerOne :last-child {\r\n    padding-left:10px;\r\n}\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/\r\n\r\n@media only screen and (min-width: 700px) and (max-width: 1200px) {\r\n    body{\r\n        margin:0 6%;\r\n    }\r\n    main {\r\n        margin:0;\r\n    }\r\n    .logo img{\r\n        width:65px;\r\n    }\r\n    .rightSide {\r\n        font-size:1.3rem;\r\n    }\r\n    .menu {\r\n        font-size:1.3rem;\r\n        display:flex;\r\n        align-items: center;\r\n    }\r\n    .mailMenu {\r\n        top:80px;\r\n        font-size:1rem;\r\n        padding:2px 2%;\r\n       \r\n    }\r\n    header {\r\n        height:90vh\r\n    }\r\n    header .firstSection {\r\n        top:12vh;\r\n        max-width:600px;\r\n        width:100%;\r\n    }\r\n    header .secondSection {\r\n        left:15%;\r\n        top:48vh;\r\n        \r\n    }\r\n    header .secondSection h1 {\r\n        font-size:3.1rem;\r\n    }\r\n    .veziProduseleSpan {\r\n        height:45px;\r\n        font-size:1.5rem;\r\n        padding-top:3px;\r\n        width:65%;\r\n    }\r\n    .inter {\r\n        margin-bottom: 20px;;\r\n    }\r\n    .headerhomeScreen .lastSection {\r\n        font-size:1.5rem;\r\n    }\r\n    .shop {\r\n        display:grid;\r\n        grid-template-columns: repeat(3, 1fr);\r\n        column-gap:20px;\r\n        row-gap: 20px;\r\n        padding-bottom:20px;\r\n    }\r\n\r\n    .productButtons button {\r\n        height:35px;\r\n        font-size:calc(6px + 6 * ((100vw - 320px) / 450));\r\n        border-radius: 8px;\r\n    }\r\n    \r\n    .project {\r\n        font-size:calc(10px + 6 * ((100vw - 330px) / 300));\r\n    }\r\n    .cartDrawer {\r\n        width:450px;\r\n    }\r\n    .titleCartDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .cart-item {\r\n        font-size:1.3rem;\r\n    }\r\n    .cartDrawerPriceSpan {\r\n        padding-right: 6px;\r\n    }\r\n    .totalDrawer {\r\n        font-size:1.4rem;\r\n    }\r\n    .productDetailsDimension, .singleItemDimension {\r\n        width:140px;\r\n    }\r\n    .productDetailsDimension,.singleItemDimension {\r\n        height:30px;\r\n\r\n    }\r\n    .productDetailsDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n    \r\n    }\r\n    .productDetailsDimension select option,.singleItemDimension select option {\r\n        font-size:0.7rem;\r\n    }\r\n    .cartDrawer .quantity {\r\n        width:55px;\r\n        height:28px;\r\n        font-size:1.2rem;\r\n    }\r\n    \r\n    .singleItemMain {\r\n        display:flex;\r\n        justify-content: space-between;\r\n        margin:1% 0 5%;\r\n        \r\n    }\r\n    .singleItemMain .leftProduct {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .singleItemDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n        padding-top:4px;\r\n    }\r\n    .buttonCartDrawer {\r\n        height:50px;\r\n        font-size:1.4rem;\r\n    }\r\n    .firstSectionProdus{\r\n        margin-right: 5%;\r\n    }\r\n    .gravuraInputs input {\r\n        font-size:1.2rem;\r\n        padding-bottom: 2px;\r\n    }\r\n    .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .lastSpan{\r\n        font-size:1.3rem;\r\n    }\r\n    .cartItemCartPage{\r\n        display:flex;\r\n        flex-direction: row;\r\n        align-items: center;\r\n    }\r\n\r\n    .cartImg {\r\n        width:50%\r\n    }\r\n    .detailsCartPage {\r\n        width:18%\r\n    }\r\n    .descP {\r\n        padding-bottom:10px;\r\n    }\r\n    .cartDesc {\r\n        padding-left:2%;\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n\r\n    \r\n    .headerCart,.emptyCart  {\r\n        font-size:calc(25px + 6 * ((100vw - 500px) / 600));\r\n        font-weight:500;\r\n    }\r\n    .personInfo input {\r\n        height:25px;\r\n    }\r\n    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n        font-size:calc(18px + 6 * ((100vw - 500px) / 600))\r\n\r\n    }\r\n    .totalCart h3 {\r\n        font-size:calc(22px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .xInCart {\r\n        order:1;\r\n        align-self:start;\r\n    }\r\n    .backCart,.backSingleItem {\r\n        white-space: nowrap;\r\n        width:fit-content;\r\n        font-size:1.1rem;\r\n    }\r\n    .checkout{\r\n        width:200px;\r\n        height:45px;\r\n    }\r\n    input[type=checkbox]\r\n    {\r\n      /* Double-sized Checkboxes */\r\n        -ms-transform: scale(1.5); /* IE */\r\n        -moz-transform: scale(1.5); /* FF */\r\n        -webkit-transform: scale(1.5); /* Safari and Chrome */\r\n        -o-transform: scale(1.5); /* Opera */\r\n        transform: scale(1.5);\r\n        padding: 10px;\r\n        margin-right:15px;\r\n    }\r\n    footer {\r\n        height:220px;  \r\n    }\r\n    \r\n    footer h4 {\r\n        font-size:1.8rem;\r\n    }\r\n\r\n    .footerOne {\r\n        font-size:1.3rem;\r\n    }\r\n    \r\n    .footerTwo {\r\n        font-size:1.5rem;\r\n    }\r\n    \r\n    .footerThree {\r\n        font-size:0.8rem;\r\n    }\r\n}\r\n\r\n\r\n@media only screen and (min-width: 1200px) {\r\n        body{\r\n            margin:0 6%;\r\n        }\r\n        main {\r\n            margin:0;\r\n        }\r\n        .logo img{\r\n            width:60px;\r\n        }\r\n        .rightSide {\r\n            font-size:1.2rem;\r\n        }\r\n        .menu {\r\n            font-size:1.2rem;\r\n            display:flex;\r\n            align-items: center;\r\n            display:none;\r\n        }\r\n        .leftSide {\r\n            display:flex;\r\n            font-size:1.2rem;\r\n            align-items: center;\r\n        }\r\n        header {\r\n            height:90vh\r\n        }\r\n        .headerhomeScreen .firstSection {\r\n            top:10%;\r\n        }\r\n        .headerhomeScreen .firstSection img {\r\n            width:400px;\r\n        }\r\n        header .secondSection {\r\n            left:15%;\r\n            top:48vh;\r\n            \r\n        }\r\n        header .secondSection h1 {\r\n            font-size:calc(50px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n\r\n        .headerhomeScreen .secondSection {\r\n            left:15%;\r\n        }\r\n        .veziProduseleSpan {\r\n            height:55px;\r\n            font-size:1.7rem;\r\n            padding-top:3px;\r\n            width:55%;\r\n        }\r\n        .headerhomeScreen .lastSection {\r\n            font-size:1.5rem;\r\n        }\r\n        .inter {\r\n            margin-bottom: 55px;\r\n            font-size: calc(14px + 6 * ((100vw - 320px) / 600));\r\n        }\r\n\r\n        .shop {\r\n            display:grid;\r\n            grid-template-columns: repeat(4, 1fr);\r\n            column-gap:20px;\r\n            row-gap: 20px;\r\n            padding-bottom:20px;\r\n        }\r\n        .item>div {\r\n            border-radius: 10px;\r\n        }\r\n        .details {\r\n            font-size:calc(10px + 6 * ((100vw - 320px) / 900))\r\n        }\r\n\r\n        .cartDrawer {\r\n            width:400px;\r\n        }\r\n        .titleCartDrawer {\r\n            font-size:1.3rem;\r\n        }\r\n        .cart-item {\r\n            font-size:1.2rem;\r\n        }\r\n        .cartDrawerPriceSpan {\r\n            padding-right: 6px;\r\n        }\r\n        .totalDrawer {\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawer .quantity {\r\n            width:55px;\r\n            height:28px;\r\n            font-size:1.2rem;\r\n        }\r\n        .productButtons button {\r\n            height:45px;\r\n            font-size:calc(9px + 6 * ((100vw - 320px) / 900));\r\n            border-radius: 8px;\r\n        }\r\n        .project {\r\n            margin:auto;\r\n            width:50%;\r\n            color:white;\r\n            padding:50px 0;\r\n            font-size:calc(10px + 6 * ((100vw - 350px) / 500));\r\n        }\r\n        .productDetailsDimension, .singleItemDimension {\r\n            width:150px;\r\n            height:30px;\r\n        }\r\n        .productDetailsDimension {\r\n            margin:3% 0;\r\n        }\r\n        .productDetailsDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 15px;\r\n            bottom:0;\r\n        }\r\n        .productDetailsDimension select option {\r\n            font-size:1.2rem;\r\n\r\n        }\r\n        .buttonCartDrawer {\r\n            height:50px;\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawerPrice{\r\n            font-size:1.2rem\r\n        }\r\n        .cartDimensiune{\r\n            font-size:1.2rem\r\n        }\r\n        .singleItemMain {\r\n            width:70%;\r\n            display:flex;\r\n            justify-content: space-between;\r\n            margin:5% auto;\r\n        }\r\n        .singleItemMain .leftProduct {\r\n            font-size:1.3rem;\r\n        }\r\n    \r\n        .singleItemDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 13px;\r\n            bottom:0;\r\n            padding-top:4px;\r\n        }\r\n        .secondSectionProdus {\r\n            width:60%\r\n        }\r\n        \r\n        .firstSectionProdus{\r\n            margin-right: 5%;\r\n        }\r\n    \r\n        .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n            font-size:1.2rem;\r\n        }\r\n        .lastSectionProdus h3{\r\n            font-size:1.7rem;\r\n        }\r\n        .lastSpan{\r\n            font-size:1.3rem;\r\n        }\r\n        #custom-select button:nth-child(2){\r\n            border-radius: 0;\r\n        }\r\n\r\n        .backSingleItem{\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.4rem;\r\n            margin-left:20px;\r\n            white-space: nowrap;\r\n        }\r\n        .backCart {\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.4rem;\r\n            margin-left:20px;\r\n        }\r\n        .cartImg {\r\n            width:45%\r\n        }\r\n        .cartItemCartPage{\r\n            display:flex;\r\n            flex-direction: row;\r\n            align-items: center;\r\n        }\r\n        #gravura1 input, #gravura2 input {\r\n            font-size:1.2rem;\r\n        }\r\n        .detailsCartPage {\r\n            width:18%\r\n        }\r\n        .descP {\r\n            padding-bottom:10px;;\r\n        }\r\n        .cartDesc {\r\n            padding-left:2%;\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 800))\r\n        }\r\n    \r\n        \r\n        .headerCart,.emptyCart  {\r\n            font-size:calc(20px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500;\r\n        }\r\n        .personInfo input {\r\n            height:25px;\r\n        }\r\n        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n            font-size:calc(12px + 6 * ((100vw - 500px) / 800))\r\n    \r\n        }\r\n        .totalCart h3 {\r\n            font-size:calc(16px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500\r\n        }\r\n        .totalCart {\r\n            margin-top:0;\r\n            width:100%;\r\n        }\r\n        .totalAndButtonCart {\r\n            display:flex;\r\n            flex-direction: column;\r\n            align-items: center;\r\n            margin-left:3%;\r\n        }\r\n        .xInCart {\r\n            order:1;\r\n            align-self:start;\r\n        }\r\n\r\n        .checkout{\r\n            width:280px;\r\n            height:55px;\r\n            white-space: nowrap;\r\n        }\r\n        input[type=checkbox]\r\n            {\r\n              /* Double-sized Checkboxes */\r\n                -ms-transform: scale(1.7); /* IE */\r\n                -moz-transform: scale(1.7); /* FF */\r\n                -webkit-transform: scale(1.7); /* Safari and Chrome */\r\n                -o-transform: scale(1.7); /* Opera */\r\n                transform: scale(1.7);\r\n                padding: 10px;\r\n                margin-right:15px;\r\n                \r\n            }\r\n        .facturare {\r\n            display:flex;\r\n        }\r\n        \r\n        .payment,.shipping {\r\n            margin:5% 0;\r\n        }\r\n        .quantityCartPage input[type=number] {\r\n            font-size: 1rem;\r\n            height:25px;\r\n        }\r\n        .quantityCartPage {\r\n            display:flex;\r\n            align-items: center;\r\n        }\r\n        footer {\r\n            height:250px;    \r\n        }\r\n        .cartWithoutHeader {\r\n            display:flex;\r\n            justify-content: center;\r\n        }\r\n        .cartWithoutHeaderAndPayment {\r\n            width:60%;\r\n        }\r\n        footer h4 {\r\n            font-weight:800;\r\n            font-size:2.2rem;\r\n        }\r\n        \r\n        .footerOne {\r\n            font-weight: 500;\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerTwo {\r\n\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerThree {\r\n            margin-top:3%;\r\n            font-size:1rem;\r\n        }\r\n        \r\n    }\r\n    \r\n    \r\n\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/", "",{"version":3,"sources":["webpack://./src/App.css"],"names":[],"mappings":"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AU;IACd;IACA;QACI,gBAAgB;IACpB;IACA;QACI,gBAAgB;QAChB,YAAY;QACZ,mBAAmB;IACvB;IACA;QACI,QAAQ;QACR,cAAc;QACd,cAAc;;IAElB;IACA;QACI;IACJ;IACA;QACI,QAAQ;QACR,eAAe;QACf,UAAU;IACd;IACA;QACI,QAAQ;QACR,QAAQ;;IAEZ;IACA;QACI,gBAAgB;IACpB;IACA;QACI,WAAW;QACX,gBAAgB;QAChB,eAAe;QACf,SAAS;IACb;IACA;QACI,mBAAmB;IACvB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,YAAY;QACZ,qCAAqC;QACrC,eAAe;QACf,aAAa;QACb,mBAAmB;IACvB;;IAEA;QACI,WAAW;QACX,iDAAiD;QACjD,kBAAkB;IACtB;;IAEA;QACI,kDAAkD;IACtD;IACA;QACI,WAAW;IACf;IACA;QACI,gBAAgB;IACpB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,kBAAkB;IACtB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,WAAW;IACf;IACA;QACI,WAAW;;IAEf;IACA;QACI,UAAU;QACV,gBAAgB;QAChB,kBAAkB;QAClB,QAAQ;;IAEZ;IACA;QACI,gBAAgB;IACpB;IACA;QACI,UAAU;QACV,WAAW;QACX,gBAAgB;IACpB;;IAEA;QACI,YAAY;QACZ,8BAA8B;QAC9B,cAAc;;IAElB;IACA;QACI,gBAAgB;IACpB;;IAEA;QACI,UAAU;QACV,gBAAgB;QAChB,kBAAkB;QAClB,QAAQ;QACR,eAAe;IACnB;IACA;QACI,WAAW;QACX,gBAAgB;IACpB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,gBAAgB;QAChB,mBAAmB;IACvB;IACA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;IACA;QACI,YAAY;QACZ,mBAAmB;QACnB,mBAAmB;IACvB;;IAEA;QACI;IACJ;IACA;QACI;IACJ;IACA;QACI,mBAAmB;IACvB;IACA;QACI,eAAe;QACf;IACJ;IACA;QACI;IACJ;;;IAGA;QACI,kDAAkD;QAClD,eAAe;IACnB;IACA;QACI,WAAW;IACf;IACA;QACI;;IAEJ;IACA;QACI;IACJ;IACA;QACI,OAAO;QACP,gBAAgB;IACpB;IACA;QACI,mBAAmB;QACnB,iBAAiB;QACjB,gBAAgB;IACpB;IACA;QACI,WAAW;QACX,WAAW;IACf;IACA;;MAEE,4BAA4B;QAC1B,yBAAyB,EAAE,OAAO;QAClC,0BAA0B,EAAE,OAAO;QACnC,6BAA6B,EAAE,sBAAsB;QACrD,wBAAwB,EAAE,UAAU;QACpC,qBAAqB;QACrB,aAAa;QACb,iBAAiB;IACrB;IACA;QACI,YAAY;IAChB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;AACJ;;;AAGA;QACQ;YACI,WAAW;QACf;QACA;YACI,QAAQ;QACZ;QACA;YACI,UAAU;QACd;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;YAChB,YAAY;YACZ,mBAAmB;YACnB,YAAY;QAChB;QACA;YACI,YAAY;YACZ,gBAAgB;YAChB,mBAAmB;QACvB;QACA;YACI;QACJ;QACA;YACI,OAAO;QACX;QACA;YACI,WAAW;QACf;QACA;YACI,QAAQ;YACR,QAAQ;;QAEZ;QACA;YACI;QACJ;;QAEA;YACI,QAAQ;QACZ;QACA;YACI,WAAW;YACX,gBAAgB;YAChB,eAAe;YACf,SAAS;QACb;QACA;YACI,gBAAgB;QACpB;QACA;YACI,mBAAmB;YACnB,mDAAmD;QACvD;;QAEA;YACI,YAAY;YACZ,qCAAqC;YACrC,eAAe;YACf,aAAa;YACb,mBAAmB;QACvB;QACA;YACI,mBAAmB;QACvB;QACA;YACI;QACJ;;QAEA;YACI,WAAW;QACf;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,kBAAkB;QACtB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,UAAU;YACV,WAAW;YACX,gBAAgB;QACpB;QACA;YACI,WAAW;YACX,iDAAiD;YACjD,kBAAkB;QACtB;QACA;YACI,WAAW;YACX,SAAS;YACT,WAAW;YACX,cAAc;YACd,kDAAkD;QACtD;QACA;YACI,WAAW;YACX,WAAW;QACf;QACA;YACI,WAAW;QACf;QACA;YACI,WAAW;YACX,gBAAgB;YAChB,kBAAkB;YAClB,QAAQ;QACZ;QACA;YACI,gBAAgB;;QAEpB;QACA;YACI,WAAW;YACX,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI;QACJ;QACA;YACI,SAAS;YACT,YAAY;YACZ,8BAA8B;YAC9B,cAAc;QAClB;QACA;YACI,gBAAgB;QACpB;;QAEA;YACI,WAAW;YACX,gBAAgB;YAChB,kBAAkB;YAClB,QAAQ;YACR,eAAe;QACnB;QACA;YACI;QACJ;;QAEA;YACI,gBAAgB;QACpB;;QAEA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;;QAEA;YACI,iBAAiB;YACjB,eAAe;YACf,gBAAgB;YAChB,gBAAgB;YAChB,mBAAmB;QACvB;QACA;YACI,iBAAiB;YACjB,eAAe;YACf,gBAAgB;YAChB,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI,YAAY;YACZ,mBAAmB;YACnB,mBAAmB;QACvB;QACA;YACI,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI,mBAAmB;QACvB;QACA;YACI,eAAe;YACf;QACJ;QACA;YACI;QACJ;;;QAGA;YACI,kDAAkD;YAClD,eAAe;QACnB;QACA;YACI,WAAW;QACf;QACA;YACI;;QAEJ;QACA;YACI,kDAAkD;YAClD;QACJ;QACA;YACI,YAAY;YACZ,UAAU;QACd;QACA;YACI,YAAY;YACZ,sBAAsB;YACtB,mBAAmB;YACnB,cAAc;QAClB;QACA;YACI,OAAO;YACP,gBAAgB;QACpB;;QAEA;YACI,WAAW;YACX,WAAW;YACX,mBAAmB;QACvB;QACA;;cAEM,4BAA4B;gBAC1B,yBAAyB,EAAE,OAAO;gBAClC,0BAA0B,EAAE,OAAO;gBACnC,6BAA6B,EAAE,sBAAsB;gBACrD,wBAAwB,EAAE,UAAU;gBACpC,qBAAqB;gBACrB,aAAa;gBACb,iBAAiB;;YAErB;QACJ;YACI,YAAY;QAChB;;QAEA;YACI,WAAW;QACf;QACA;YACI,eAAe;YACf,WAAW;QACf;QACA;YACI,YAAY;YACZ,mBAAmB;QACvB;QACA;YACI,YAAY;QAChB;QACA;YACI,YAAY;YACZ,uBAAuB;QAC3B;QACA;YACI,SAAS;QACb;QACA;YACI,eAAe;YACf,gBAAgB;QACpB;;QAEA;YACI,gBAAgB;YAChB,gBAAgB;QACpB;;QAEA;;YAEI,gBAAgB;QACpB;;QAEA;YACI,aAAa;YACb,cAAc;QAClB;;IAEJ;;;;AAIJ;;4CAE4C","sourcesContent":["/* Box Model Hack */\r\n:root{  \r\n    \r\n    --toastify-color-success: #346751;\r\n    --toastify-color-progress-light: linear-gradient(\r\n      to right,\r\n      #346751,\r\n      #5ac8fa,\r\n      #007aff,\r\n      #34aadc,\r\n      #5856d6,\r\n      #ff2d55\r\n    );\r\n  }\r\n\r\n\r\n\r\n\r\n* {\r\n    box-sizing: border-box;\r\n}\r\n\r\n/* Clear fix hack */\r\n.clearfix:after {\r\n    content: \".\";\r\n    display: block;\r\n    clear: both;\r\n    visibility: hidden;\r\n    line-height: 0;\r\n    height: 0;\r\n}\r\n\r\n.clear {\r\n   clear: both;\r\n}\r\n\r\nhtml {\r\n    background-color:rgba(23, 23, 23, 0.966);\r\n    scroll-behavior: smooth;\r\n    font-size:16px;\r\n}\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n.container-root {\r\n    display: grid;\r\n    grid-template-columns: 1fr 1fr 1fr 1fr;\r\n    grid-template-rows: 0.1fr 0.1fr 0.1fr 0.5fr 0.1fr 0.05fr;\r\n    grid-template-areas:\r\n      \"nav nav nav nav\"\r\n      \"header header header header\"\r\n      \"inter inter inter inter\"\r\n      \"main main main main\"\r\n      \"project project project project\"\r\n      \"footer footer footer footer\";\r\n    grid-gap: 0.2rem;\r\n    color:white;\r\n    height: 100%;\r\n    text-rendering: optimizeLegibility;\r\n    height:100vh;\r\n}\r\n\r\nnav {\r\n    grid-area: nav;\r\n}\r\n\r\nheader {\r\n    grid-area: header;\r\n    height:90vh;\r\n    \r\n}\r\n\r\n.inter {\r\n    grid-area: inter;\r\n}\r\n\r\nmain {\r\n    grid-area: main;\r\n    margin:0 6%;\r\n    \r\n}\r\n\r\n.project {\r\n    grid-area: project;\r\n    margin:0 6%;\r\n}\r\nfooter {\r\n    grid-area: footer;\r\n}\r\n\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* BASE STYLES\r\n/*******************************************/\r\n\r\nbody {\r\n    font-family:\"Open Sans\", sans-serif;\r\n    font-size: 16px;\r\n    line-height:1.5;\r\n    color:white;\r\n    text-rendering: optimizeLegibility;\r\n}\r\n\r\na {\r\n    text-decoration:none;\r\n    color:inherit;\r\n}\r\n\r\nul {\r\n    list-style-type: none;\r\n}\r\n\r\na:visited {\r\n    color:inherit;\r\n}\r\n\r\n\r\n.noDisplay {\r\n    display: none;\r\n}\r\n\r\n.display {\r\n    display:contents;\r\n}\r\n*:focus {\r\n    outline: 0 !important;\r\n}\r\nbutton {\r\n    outline: none;\r\n    border-style:none;\r\n}\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\nnav .container {\r\n    height: 100%;\r\n    padding-top:5vh;\r\n    border-bottom: solid 1px rgba(255,255,255,0.7);\r\n    \r\n}\r\nnav .container ul {\r\n    display:grid;\r\n    grid-template-columns:1fr 2fr 1fr ;\r\n    grid-template-rows: auto;\r\n    grid-template-areas: \"mail logo cont\";\r\n    margin-bottom:1vh;\r\n}\r\n\r\n.logo img{\r\n    width:45px;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    margin-top:-18px;\r\n    \r\n}\r\n\r\n.contLogo {\r\n    grid-area:logo;\r\n    justify-self:center;\r\n}\r\n.rightSide span {\r\n    display:none;\r\n}\r\n.rightSide {\r\n    grid-area: cont;\r\n    display:flex;\r\n    align-self: center;\r\n    font-size:0.9rem;\r\n    justify-content: end;\r\n}\r\n.cart{\r\n    display:flex;\r\n}\r\n\r\n.fa-cart-shopping{\r\n    padding-right:0.8rem;\r\n    margin-top:0.2rem;\r\n}\r\n\r\n.leftSide {\r\n    grid-area:mail;\r\n    display:none;\r\n}\r\n\r\n.menu {\r\n    grid-area:mail;\r\n    padding-left:10px;\r\n    font-size:1.2rem;\r\n}\r\n.back {\r\n    display:none;\r\n}\r\n\r\n.cartAmount {\r\n    margin-left: -5px;\r\n}\r\n\r\n.cart{\r\n    display:flex;\r\n    padding-right: 10px;\r\n}\r\n\r\n.mailMenu {\r\n    position:absolute;\r\n    top:65px;\r\n    background-color: white;\r\n    color:black;\r\n    font-size:0.9rem;\r\n    padding:2px 2%;\r\n    transition: opacity 1s ease-out;\r\n}\r\n\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n.headerhomeScreen {\r\n    padding-top:30px;\r\n    font-family: 'Cinzel', serif;\r\n    font-size:25px;\r\n    font-weight:500;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.headerhomeScreen img {\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.headerhomeScreen .firstSection {\r\n    width:50%;\r\n    max-width:400px;\r\n    min-width:200px;\r\n    position:absolute;\r\n    left:37%;\r\n    top:15vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    padding-top:10px;\r\n    z-index: -1;\r\n    margin-top:50px;\r\n}\r\n\r\n.headerhomeScreen .secondSection {\r\n    position:absolute;\r\n    left:10%;\r\n    top:45vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    font-size: calc(26px + 6 * ((100vw - 320px) / 250))\r\n}\r\n\r\n.veziProdusle a {\r\n    display: block;\r\n    height: 20px;;\r\n    width: fit-content;\r\n}\r\n\r\n.veziProduseleSpan {\r\n    display:flex;\r\n    background-color: white;\r\n    outline: 0;\r\n    border: black solid 1px;\r\n    height: 30px;\r\n    font-family: 'Niramit', sans-serif;\r\n    color:black;\r\n    border-radius: 5px;\r\n    font-weight: 500;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 900));\r\n    width:70%;\r\n    justify-content: center;\r\n    align-items: center;\r\n    padding-top:2px;\r\n\r\n}\r\n\r\n\r\n.headerhomeScreen .lastSection {\r\n    position:absolute;\r\n    left:auto;\r\n    top:auto;\r\n    bottom:25px;\r\n    right:25px;\r\n    font-size:0.9rem;\r\n    letter-spacing: 1px;\r\n    \r\n}\r\n\r\n.headerhomeScreen .lastSection i {\r\n    padding-left:7px;\r\n}\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n.inter {\r\n    white-space: nowrap;\r\n    text-transform: uppercase;\r\n    font-weight: 600;\r\n    margin-bottom: 10px;\r\n    padding-top:20px;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center ;\r\n}\r\n\r\n.inter h2 {\r\n    display:inline-block;\r\n    width:fit-content;\r\n    padding:0px 10px;\r\n}\r\n\r\n\r\n.inter h2:hover {\r\n    cursor: pointer;\r\n}\r\n\r\n.inter h2:after {\r\n    display:block;\r\n    content: '';\r\n    border-bottom: solid 2px white; \r\n    transform: scaleX(0);  \r\n    transition: transform 250ms ease-in-out;\r\n}\r\n.inter h2:hover:after { \r\n    transform: scaleX(1); \r\n}\r\n\r\n.inter h2:after{  \r\n    transform-origin: 0% 50%; \r\n}\r\n\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n.shop {\r\n    display:grid;\r\n    grid-template-columns: repeat(2, 1fr);\r\n    column-gap:20px;\r\n    row-gap: 20px;\r\n    padding-bottom:20px;\r\n    border-bottom:rgba(255, 255, 255, 0.555) 1px solid;\r\n    text-align: center;\r\n}\r\n.item>div {\r\n    background:rgba(0, 0, 0, 0.425);\r\n    padding:8px 10px 20px;\r\n    height: fit-content;\r\n    font-size:calc(10px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center;\r\n    border-radius: 5px;\r\n}\r\n.shop img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.shop p{\r\n    display: inline-block;\r\n    padding:10px 0 2px 0;\r\n    text-align: center;\r\n    font-weight:500;\r\n}\r\n\r\n.priceQuantity .buttons {\r\n    display:none;\r\n    justify-content: center;\r\n}\r\n\r\n.productButtons {\r\n    display:flex;\r\n    justify-content: space-around;\r\n    align-items: center;\r\n    padding-top:10px;\r\n}\r\n.productButtons a{\r\n    display:block;\r\n    height: fit-content;\r\n}\r\n.productButtons button {\r\n    height:calc(25px + 6 * ((100vw - 320px) / 200));\r\n    font-size:calc(6px + 6 * ((100vw - 320px) / 200));\r\n    font-weight: 600;\r\n    color:white;\r\n    border-radius: 7px;\r\n    cursor: pointer;\r\n    border:none;\r\n    width:50%;\r\n}\r\n.productButtons button:first-child {\r\n    background-color: #346751;\r\n    margin-right:5%\r\n}\r\n\r\n.productButtons button:first-child:hover {\r\n    background-color: #2c5744;\r\n}\r\n.productButtons button:last-child {\r\n    background-color:#D65A31 ;\r\n}\r\n\r\n.productButtons button:last-child:hover {\r\n    background-color:rgb(180, 86, 43) ; \r\n}\r\n\r\n.productDetailsDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.productDetailsDimension,\r\n.productDetailsDimension * {\r\n    display:flex;\r\n    width:75px;\r\n    position: relative;\r\n\r\n}\r\n.productDetailsDimension {\r\n    background-color: #E6E6E6;\r\n    height:19px;\r\n    border-radius: 5px;\r\n    margin:5% 0;\r\n}\r\n.productDetailsDimension select {\r\n    position:relative;\r\n    bottom:1px;\r\n    font-size: 0.6rem;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:12px;\r\n\r\n}\r\n.productDetailsDimension select:active, .productDetailsDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.productDetailsDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n\r\n.cartDrawer {\r\n    display:none;\r\n    position:fixed;\r\n    height:100vh;\r\n    width:300px;\r\n    top:0;\r\n    right:0;\r\n    background-color: white;\r\n    color:black;\r\n    overflow: scroll;\r\n    overflow-x: hidden;\r\n    flex-direction: column;\r\n    -webkit-user-select: none;\r\n    -moz-user-select: none;\r\n    -ms-user-select: none;\r\n    user-select: none;\r\n}\r\n.drawerContainer {\r\n    position: fixed;\r\n    display: none;\r\n    width: 100%;\r\n    height: 100%;\r\n    top: 0;\r\n    left: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    background-color: rgba(0,0,0,0.5);\r\n    z-index: 2;\r\n}\r\n\r\n.cartDrawer::-webkit-scrollbar {\r\n    width:0.5rem;\r\n}\r\n.cartDrawer::-webkit-scrollbar-track {\r\n    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);\r\n}\r\n.cartDrawer::-webkit-scrollbar-thumb {\r\n    background-color: darkgrey;\r\n    outline: 1px solid slategrey;\r\n}\r\n\r\n.titleCartDrawer {\r\n    width:50%;\r\n    margin: 10px auto;\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n    font-weight: 600;\r\n}\r\n\r\n.cartDrawer main {\r\n    margin:5% 5% 0%;\r\n    \r\n}\r\n.closeDrawerSection {\r\n    display:flex;\r\n    justify-content: end;\r\n    margin:10px\r\n}\r\n.closeDrawer {\r\n    \r\n    cursor:pointer;\r\n    background-color: white;\r\n    border: none;\r\n}\r\n.cartDrawerDetails {\r\n    padding-top:5%;\r\n    padding-bottom: 1%;\r\n    grid-template-columns: 3fr 1fr 1fr\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    padding-left:5px;\r\n}\r\n\r\n\r\n.cartDrawerDetails div {\r\n    text-align: center;\r\n    align-self: center;\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    display:flex;\r\n}\r\n.cartProductImg {\r\n    display:flex;\r\n    width:40%;\r\n    justify-content: center;\r\n    \r\n}\r\n.cartProductImg img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n.cartProduct {\r\n    display:flex;\r\n    width:100%;\r\n}\r\n\r\n.cartProduct p {\r\n    width:95%;\r\n    font-weight: 500;\r\n}\r\n.cartProductDescCant {\r\n    padding-left: 5%;\r\n}\r\n.cart-item {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    margin-bottom:5%;\r\n    flex-direction: column;\r\n    border-bottom: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-bottom:10px;\r\n    font-size:0.9rem;\r\n}\r\n.cart-item:first-child {\r\n    border-top: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-top:10px;\r\n}\r\n.cartDrawer .quantity {\r\n    width:50px;\r\n    height:20px;\r\n    border:none;\r\n    text-align: center;\r\n    font-size:0.9rem;\r\n    border:1px rgba(128, 128, 128, 0.445) solid\r\n}\r\n\r\n.cartDrawerPriceSpan {\r\n    color:gray;\r\n    padding-right:3px;\r\n}\r\n\r\n.cartDrawer .buttons {\r\n    display:flex;\r\n}\r\n\r\n.xInDrawer {\r\n    align-self: end;\r\n    cursor: pointer;\r\n    order:-1\r\n}\r\n\r\n.totalDrawer {\r\n    font-size:1rem;\r\n    width:60%;\r\n    margin:0 auto;\r\n    text-align: center;\r\n}\r\n.totalDrawer span {\r\n    display:block\r\n}\r\n\r\n.buttonCartDrawer {\r\n    background-color:rgb(255, 106, 61);\r\n    height:35px;\r\n    font-size:1.2rem;\r\n    color:white;\r\n    font-weight: 600;\r\n    margin-top:20px;\r\n    padding:0 40px;;\r\n    border-radius:8px;\r\n    border-color:white;\r\n    cursor:pointer;\r\n}\r\n\r\n.buttonDrawerContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n    align-items: center;\r\n}\r\n.buttonCartDrawer:hover {\r\n    background-color:rgb(235, 96, 54); ;\r\n}\r\n\r\n.containerC {\r\n    text-align: center;\r\n}\r\n\r\n\r\n.cartDrawer {\r\n    transition: left 0.3s ease-in-out;\r\n}\r\n\r\n.cartDrawer:focus-within {\r\n    right: 0;\r\n}\r\n\r\n.cartDrawer:focus {\r\n    outline: 0;\r\n}\r\n\r\ninput[type=number] {\r\n    /*for absolutely positioning spinners*/\r\n    position: relative; \r\n    padding: 5px;\r\n    padding-right: 25px;\r\n}\r\n\r\ninput[type=number]::-webkit-inner-spin-button,\r\ninput[type=number]::-webkit-outer-spin-button {\r\n    opacity: 1;\r\n}\r\n\r\ninput[type=number]::-webkit-outer-spin-button, \r\ninput[type=number]::-webkit-inner-spin-button {\r\n    -webkit-appearance: inner-spin-button !important;\r\n    width: 20px;\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    height: 100%;\r\n}\r\n\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n\r\n.project {\r\n    text-align: center;\r\n    color:white;\r\n    padding:20px 0;\r\n}\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n.cartContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n\r\n.headerCart  {\r\n    display:flex;\r\n    margin:1% 5% 5%;\r\n    justify-content: center;\r\n    align-items:center ;\r\n    font-size:1.2rem;\r\n    height: fit-content;\r\n}\r\n.cartContainer footer {\r\n    margin-top: auto;\r\n}\r\n\r\n.totalCart span {\r\n    display:block;\r\n}\r\n\r\n.emptyCart {\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.cartItemCartPage {\r\n    display:flex;\r\n    flex-direction: column;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin-bottom: 25px;\r\n}\r\n.xInCart {\r\n    order:-1;\r\n    text-align: end;\r\n    padding-bottom: 10px;\r\n    margin-top:-5px;\r\n    font-size:1rem;\r\n}\r\n.cartImg img{\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.quantityCartPage {\r\n    width:50px;\r\n    display:flex;\r\n    align-items: center;\r\n}\r\n.descP {\r\n    font-weight: 600;\r\n}\r\n\r\n.backCart {\r\n    width:fit-content;\r\n    margin:1% 5% 0;\r\n    font-size: 0.9rem;\r\n    cursor:pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.quantityCartPage input[type=number] {\r\n    padding-block:2px;\r\n    text-align: center;\r\n    height:19px;\r\n    margin-left:5px;\r\n}\r\n\r\n.cartPagePriceSpan {\r\n    color:lightgrey;\r\n    font-size:0.9rem\r\n}\r\n.priceCartPage {\r\n    color:#f86837;\r\n    font-size:1.1rem;\r\n}\r\n.detailsCartPage {\r\n    display:flex;\r\n    justify-content: end;\r\n}\r\n.shipping {\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin:0 5%;\r\n}\r\n\r\n.shipping h2:first-child{\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n.personalInfo h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.personalInfo span {\r\n    display:block;\r\n    text-transform: uppercase;\r\n    margin-top:10px;\r\n    \r\n}\r\n.personalInfo input {\r\n    all:unset;\r\n    width: 95%;\r\n    height: 23px;\r\n    background-color: rgb(240, 243, 247);\r\n    color:black;\r\n    padding-left:10px;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.payment {\r\n    margin:5% 5%;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n}\r\n\r\n.facturare {\r\n    margin-top:10px;\r\n    \r\n}\r\n.payment h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n\r\n.totalCart {\r\n    margin:5%;\r\n    padding:5%;\r\n    border:1px solid white;\r\n    margin-block:25px;\r\n    font-size:0.9rem;\r\n    border-radius: 10px;\r\n\r\n}\r\n\r\n.totalCart h3 {\r\n    font-size:1.2rem;\r\n    text-align: center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.totalCart ul {\r\n    margin-bottom:20px;\r\n}\r\n.totalCart ul li span {\r\n    display:inline;\r\n}\r\n.totalCart > span {\r\n    font-size: 1.1rem;\r\n    text-align: center;\r\n}\r\n.paymentButton {\r\n    display:flex;\r\n    justify-content: center;\r\n    margin-bottom:25px;\r\n}\r\n.checkout {\r\n    background-color:#ee693d;\r\n    outline:0;\r\n    border:0;\r\n    width:160px;\r\n    color:rgba(255, 255, 255, 0.863);\r\n    height:35px;\r\n    border-radius:5px;\r\n    font-size:1.1rem;\r\n    font-weight: 600;\r\n    cursor:pointer;\r\n}\r\n\r\n.checkout:hover {\r\n    background-color:#db5c32;\r\n}\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* Single Item\r\n/*******************************************/\r\n\r\n\r\n.singleItemMain {\r\n    margin:2% 10% 5%;\r\n    color: white(0, 0, 0, 0.829);\r\n}\r\n.singleItemContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n.singleItemContainer footer {\r\n    margin-top: auto;\r\n}\r\n.firstSectionProdus img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n\r\n}\r\n\r\n.secondSectionProdus h1 {\r\n    text-align: center;\r\n    font-size:1.7rem;\r\n    font-weight: 700;\r\n    margin-bottom: 50px;\r\n}\r\n\r\n.secondSectionProdus input {\r\n    width:22px;\r\n    height:19px;\r\n    text-align: center;\r\n    border-radius:0px;\r\n    outline: 0;\r\n    border: 0;\r\n}\r\n\r\n.secondSectionProdus ul li {\r\n    display:grid;\r\n    grid-template-columns: 1fr 1fr 1fr;\r\n    grid-template-areas:\"left . right\";\r\n    margin-bottom: 10px;\r\n    border-bottom: 2px dotted lightgrey;\r\n    padding-bottom: 9px;\r\n    \r\n}\r\n\r\n.leftProduct {\r\n    grid-area:left;\r\n} \r\n.rightProduct {\r\n    grid-area:right;\r\n    justify-self: center;\r\n}\r\n\r\n.greutate {\r\n    font-size: 0.8rem;\r\n    font-weight: 400;\r\n}\r\n#gravura1,#gravura2 {\r\n    display:flex;\r\n    \r\n    align-items: center;\r\n}\r\n#gravura1 .leftProduct, #gravura2 .leftProduct {\r\n    width:fit-content;\r\n    padding-right:10px;\r\n    white-space: nowrap\r\n}\r\n\r\n#gravura1 .rightProduct, #gravura2 .rightProduct {\r\n    width:50%;\r\n}\r\n\r\n#gravura1 input, #gravura2 input {\r\n    width:80%;\r\n    background-color:inherit;\r\n    border-bottom: 1px solid white;\r\n    color:white;\r\n    text-align: start;\r\n    padding-left: 5px;\r\n}\r\n#custom-select {\r\n    display:flex;\r\n    justify-content: space-between;\r\n}\r\n#custom-select .rightProduct {\r\n    \r\n    justify-self: center;\r\n}\r\n\r\n#custom-select button:first-child {\r\n    margin-right:-2px;\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n\r\n#custom-select button:nth-child(2){\r\n    border-radius: 0;\r\n}\r\n\r\n\r\n.lastSpan {\r\n    display: block;\r\n}\r\n\r\n.lastSectionProdus {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    text-align: center;\r\n    align-items: center;\r\n    margin-bottom:50px;\r\n}\r\n\r\n.lastSectionProdus div {\r\n    display:flex;\r\n    text-align: center;\r\n    align-items: center;\r\n}\r\n\r\n.lastSectionProdus div span {\r\n    color:grey;\r\n}\r\n\r\n.lastSectionProdus h3 {\r\n    color:#FF7700;\r\n    font-size:1.7rem;\r\n    font-weight: 500;\r\n    padding-right: 10px;\r\n}\r\n.secondSectionProdus li > span {\r\n    font-weight: 600;\r\n}\r\n\r\n.cartAdd {\r\n    background-color: #FF7700;\r\n    color: white;\r\n    padding:10px;\r\n    border-radius:5px;\r\n    cursor:pointer;\r\n}\r\n\r\n.support button {\r\n    background: #E6E6E6;\r\n    border: 1px solid black;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n    padding:5px 10px;\r\n    text-align: center;\r\n}\r\n\r\n.support button:focus {\r\n    background: #e5e5e5;\r\n    outline: none;\r\n    -webkit-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n       -moz-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n            box-shadow: inset 0px 0px 5px #c1c1c1;\r\n}\r\n\r\n\r\n.support button:first-child {\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n.support button:last-child {\r\n    margin-left:-2px;\r\n    border-top-left-radius: 0;\r\n    border-bottom-left-radius: 0;\r\n}\r\n\r\n\r\n.quantity {\r\n    display:flex;\r\n    justify-content: center;\r\n    \r\n}\r\n\r\n.quantityButtons {\r\n    padding-left:5px;\r\n    margin-top:-1px;\r\n}\r\n.quantityButtons input {\r\n    width:25px;\r\n}\r\n.quantity input[value] {\r\n    font-size:0.5rem;\r\n    text-align: center;\r\n    border-radius: 0;\r\n}\r\n#custom-select button:focus {\r\n    background-color:white\r\n}\r\n#custom-select button:active {\r\n    background-color: #c1c1c1;\r\n}\r\n\r\n#custom-select .rightProduct {\r\n    display: flex;\r\n    justify-content:center;\r\n}\r\n.singleItemDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.singleItemDimension,\r\n.singleItemDimension * {\r\n    width:85px;\r\n    height:25px;\r\n    position: relative;\r\n    \r\n}\r\n.singleItemDimension {\r\n    position: relative;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    \r\n}\r\n.singleItemDimension select {\r\n    position:relative;\r\n    bottom:2px;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:5px;\r\n    font-size:0.8rem;\r\n}\r\n.singleItemDimension select:active, .singleItemDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.singleItemDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n\r\n.backSingleItem {\r\n    white-space: nowrap;\r\n    width:fit-content;\r\n    margin:1% 5%;\r\n}\r\n/******************************************\r\n/* Single Product\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n\r\nfooter {\r\n    background-color: #346751 ;\r\n    height:200px;    \r\n    color:black;\r\n  \r\n}\r\n\r\n.footer {\r\n    height:100%;\r\n    margin:0 10%;\r\n    padding-top:2%;\r\n}\r\n\r\nfooter a, footer span {\r\n    display:inline-block;\r\n}\r\n\r\nfooter h4 {\r\n    font-weight:800;\r\n    font-size:1.6rem;\r\n    text-align: center;\r\n}\r\n.titleFooter{\r\n    text-align: center;\r\n}\r\n.footerOne {\r\n    text-align: center;\r\n    font-weight: 500;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.footerTwo {\r\n    text-align:center;\r\n    font-size:1.4rem;\r\n}\r\n\r\n.footerThree {\r\n    margin-top:3%;\r\n    text-align: center;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.footerTwo :not(:last-child){\r\n    padding-right: 10px;\r\n}\r\n\r\n.footerOne :first-child {\r\n    padding-right:10px;\r\n}\r\n\r\n.footerOne :last-child {\r\n    padding-left:10px;\r\n}\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/\r\n\r\n@media only screen and (min-width: 700px) and (max-width: 1200px) {\r\n    body{\r\n        margin:0 6%;\r\n    }\r\n    main {\r\n        margin:0;\r\n    }\r\n    .logo img{\r\n        width:65px;\r\n    }\r\n    .rightSide {\r\n        font-size:1.3rem;\r\n    }\r\n    .menu {\r\n        font-size:1.3rem;\r\n        display:flex;\r\n        align-items: center;\r\n    }\r\n    .mailMenu {\r\n        top:80px;\r\n        font-size:1rem;\r\n        padding:2px 2%;\r\n       \r\n    }\r\n    header {\r\n        height:90vh\r\n    }\r\n    header .firstSection {\r\n        top:12vh;\r\n        max-width:600px;\r\n        width:100%;\r\n    }\r\n    header .secondSection {\r\n        left:15%;\r\n        top:48vh;\r\n        \r\n    }\r\n    header .secondSection h1 {\r\n        font-size:3.1rem;\r\n    }\r\n    .veziProduseleSpan {\r\n        height:45px;\r\n        font-size:1.5rem;\r\n        padding-top:3px;\r\n        width:65%;\r\n    }\r\n    .inter {\r\n        margin-bottom: 20px;;\r\n    }\r\n    .headerhomeScreen .lastSection {\r\n        font-size:1.5rem;\r\n    }\r\n    .shop {\r\n        display:grid;\r\n        grid-template-columns: repeat(3, 1fr);\r\n        column-gap:20px;\r\n        row-gap: 20px;\r\n        padding-bottom:20px;\r\n    }\r\n\r\n    .productButtons button {\r\n        height:35px;\r\n        font-size:calc(6px + 6 * ((100vw - 320px) / 450));\r\n        border-radius: 8px;\r\n    }\r\n    \r\n    .project {\r\n        font-size:calc(10px + 6 * ((100vw - 330px) / 300));\r\n    }\r\n    .cartDrawer {\r\n        width:450px;\r\n    }\r\n    .titleCartDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .cart-item {\r\n        font-size:1.3rem;\r\n    }\r\n    .cartDrawerPriceSpan {\r\n        padding-right: 6px;\r\n    }\r\n    .totalDrawer {\r\n        font-size:1.4rem;\r\n    }\r\n    .productDetailsDimension, .singleItemDimension {\r\n        width:140px;\r\n    }\r\n    .productDetailsDimension,.singleItemDimension {\r\n        height:30px;\r\n\r\n    }\r\n    .productDetailsDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n    \r\n    }\r\n    .productDetailsDimension select option,.singleItemDimension select option {\r\n        font-size:0.7rem;\r\n    }\r\n    .cartDrawer .quantity {\r\n        width:55px;\r\n        height:28px;\r\n        font-size:1.2rem;\r\n    }\r\n    \r\n    .singleItemMain {\r\n        display:flex;\r\n        justify-content: space-between;\r\n        margin:1% 0 5%;\r\n        \r\n    }\r\n    .singleItemMain .leftProduct {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .singleItemDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n        padding-top:4px;\r\n    }\r\n    .buttonCartDrawer {\r\n        height:50px;\r\n        font-size:1.4rem;\r\n    }\r\n    .firstSectionProdus{\r\n        margin-right: 5%;\r\n    }\r\n    .gravuraInputs input {\r\n        font-size:1.2rem;\r\n        padding-bottom: 2px;\r\n    }\r\n    .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .lastSpan{\r\n        font-size:1.3rem;\r\n    }\r\n    .cartItemCartPage{\r\n        display:flex;\r\n        flex-direction: row;\r\n        align-items: center;\r\n    }\r\n\r\n    .cartImg {\r\n        width:50%\r\n    }\r\n    .detailsCartPage {\r\n        width:18%\r\n    }\r\n    .descP {\r\n        padding-bottom:10px;\r\n    }\r\n    .cartDesc {\r\n        padding-left:2%;\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n\r\n    \r\n    .headerCart,.emptyCart  {\r\n        font-size:calc(25px + 6 * ((100vw - 500px) / 600));\r\n        font-weight:500;\r\n    }\r\n    .personInfo input {\r\n        height:25px;\r\n    }\r\n    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n        font-size:calc(18px + 6 * ((100vw - 500px) / 600))\r\n\r\n    }\r\n    .totalCart h3 {\r\n        font-size:calc(22px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .xInCart {\r\n        order:1;\r\n        align-self:start;\r\n    }\r\n    .backCart,.backSingleItem {\r\n        white-space: nowrap;\r\n        width:fit-content;\r\n        font-size:1.1rem;\r\n    }\r\n    .checkout{\r\n        width:200px;\r\n        height:45px;\r\n    }\r\n    input[type=checkbox]\r\n    {\r\n      /* Double-sized Checkboxes */\r\n        -ms-transform: scale(1.5); /* IE */\r\n        -moz-transform: scale(1.5); /* FF */\r\n        -webkit-transform: scale(1.5); /* Safari and Chrome */\r\n        -o-transform: scale(1.5); /* Opera */\r\n        transform: scale(1.5);\r\n        padding: 10px;\r\n        margin-right:15px;\r\n    }\r\n    footer {\r\n        height:220px;  \r\n    }\r\n    \r\n    footer h4 {\r\n        font-size:1.8rem;\r\n    }\r\n\r\n    .footerOne {\r\n        font-size:1.3rem;\r\n    }\r\n    \r\n    .footerTwo {\r\n        font-size:1.5rem;\r\n    }\r\n    \r\n    .footerThree {\r\n        font-size:0.8rem;\r\n    }\r\n}\r\n\r\n\r\n@media only screen and (min-width: 1200px) {\r\n        body{\r\n            margin:0 6%;\r\n        }\r\n        main {\r\n            margin:0;\r\n        }\r\n        .logo img{\r\n            width:60px;\r\n        }\r\n        .rightSide {\r\n            font-size:1.2rem;\r\n        }\r\n        .menu {\r\n            font-size:1.2rem;\r\n            display:flex;\r\n            align-items: center;\r\n            display:none;\r\n        }\r\n        .leftSide {\r\n            display:flex;\r\n            font-size:1.2rem;\r\n            align-items: center;\r\n        }\r\n        header {\r\n            height:90vh\r\n        }\r\n        .headerhomeScreen .firstSection {\r\n            top:10%;\r\n        }\r\n        .headerhomeScreen .firstSection img {\r\n            width:400px;\r\n        }\r\n        header .secondSection {\r\n            left:15%;\r\n            top:48vh;\r\n            \r\n        }\r\n        header .secondSection h1 {\r\n            font-size:calc(50px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n\r\n        .headerhomeScreen .secondSection {\r\n            left:15%;\r\n        }\r\n        .veziProduseleSpan {\r\n            height:55px;\r\n            font-size:1.7rem;\r\n            padding-top:3px;\r\n            width:55%;\r\n        }\r\n        .headerhomeScreen .lastSection {\r\n            font-size:1.5rem;\r\n        }\r\n        .inter {\r\n            margin-bottom: 55px;\r\n            font-size: calc(14px + 6 * ((100vw - 320px) / 600));\r\n        }\r\n\r\n        .shop {\r\n            display:grid;\r\n            grid-template-columns: repeat(4, 1fr);\r\n            column-gap:20px;\r\n            row-gap: 20px;\r\n            padding-bottom:20px;\r\n        }\r\n        .item>div {\r\n            border-radius: 10px;\r\n        }\r\n        .details {\r\n            font-size:calc(10px + 6 * ((100vw - 320px) / 900))\r\n        }\r\n\r\n        .cartDrawer {\r\n            width:400px;\r\n        }\r\n        .titleCartDrawer {\r\n            font-size:1.3rem;\r\n        }\r\n        .cart-item {\r\n            font-size:1.2rem;\r\n        }\r\n        .cartDrawerPriceSpan {\r\n            padding-right: 6px;\r\n        }\r\n        .totalDrawer {\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawer .quantity {\r\n            width:55px;\r\n            height:28px;\r\n            font-size:1.2rem;\r\n        }\r\n        .productButtons button {\r\n            height:45px;\r\n            font-size:calc(9px + 6 * ((100vw - 320px) / 900));\r\n            border-radius: 8px;\r\n        }\r\n        .project {\r\n            margin:auto;\r\n            width:50%;\r\n            color:white;\r\n            padding:50px 0;\r\n            font-size:calc(10px + 6 * ((100vw - 350px) / 500));\r\n        }\r\n        .productDetailsDimension, .singleItemDimension {\r\n            width:150px;\r\n            height:30px;\r\n        }\r\n        .productDetailsDimension {\r\n            margin:3% 0;\r\n        }\r\n        .productDetailsDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 15px;\r\n            bottom:0;\r\n        }\r\n        .productDetailsDimension select option {\r\n            font-size:1.2rem;\r\n\r\n        }\r\n        .buttonCartDrawer {\r\n            height:50px;\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawerPrice{\r\n            font-size:1.2rem\r\n        }\r\n        .cartDimensiune{\r\n            font-size:1.2rem\r\n        }\r\n        .singleItemMain {\r\n            width:70%;\r\n            display:flex;\r\n            justify-content: space-between;\r\n            margin:5% auto;\r\n        }\r\n        .singleItemMain .leftProduct {\r\n            font-size:1.3rem;\r\n        }\r\n    \r\n        .singleItemDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 13px;\r\n            bottom:0;\r\n            padding-top:4px;\r\n        }\r\n        .secondSectionProdus {\r\n            width:60%\r\n        }\r\n        \r\n        .firstSectionProdus{\r\n            margin-right: 5%;\r\n        }\r\n    \r\n        .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n            font-size:1.2rem;\r\n        }\r\n        .lastSectionProdus h3{\r\n            font-size:1.7rem;\r\n        }\r\n        .lastSpan{\r\n            font-size:1.3rem;\r\n        }\r\n        #custom-select button:nth-child(2){\r\n            border-radius: 0;\r\n        }\r\n\r\n        .backSingleItem{\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.4rem;\r\n            margin-left:20px;\r\n            white-space: nowrap;\r\n        }\r\n        .backCart {\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.4rem;\r\n            margin-left:20px;\r\n        }\r\n        .cartImg {\r\n            width:45%\r\n        }\r\n        .cartItemCartPage{\r\n            display:flex;\r\n            flex-direction: row;\r\n            align-items: center;\r\n        }\r\n        #gravura1 input, #gravura2 input {\r\n            font-size:1.2rem;\r\n        }\r\n        .detailsCartPage {\r\n            width:18%\r\n        }\r\n        .descP {\r\n            padding-bottom:10px;;\r\n        }\r\n        .cartDesc {\r\n            padding-left:2%;\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 800))\r\n        }\r\n    \r\n        \r\n        .headerCart,.emptyCart  {\r\n            font-size:calc(20px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500;\r\n        }\r\n        .personInfo input {\r\n            height:25px;\r\n        }\r\n        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n            font-size:calc(12px + 6 * ((100vw - 500px) / 800))\r\n    \r\n        }\r\n        .totalCart h3 {\r\n            font-size:calc(16px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500\r\n        }\r\n        .totalCart {\r\n            margin-top:0;\r\n            width:100%;\r\n        }\r\n        .totalAndButtonCart {\r\n            display:flex;\r\n            flex-direction: column;\r\n            align-items: center;\r\n            margin-left:3%;\r\n        }\r\n        .xInCart {\r\n            order:1;\r\n            align-self:start;\r\n        }\r\n\r\n        .checkout{\r\n            width:280px;\r\n            height:55px;\r\n            white-space: nowrap;\r\n        }\r\n        input[type=checkbox]\r\n            {\r\n              /* Double-sized Checkboxes */\r\n                -ms-transform: scale(1.7); /* IE */\r\n                -moz-transform: scale(1.7); /* FF */\r\n                -webkit-transform: scale(1.7); /* Safari and Chrome */\r\n                -o-transform: scale(1.7); /* Opera */\r\n                transform: scale(1.7);\r\n                padding: 10px;\r\n                margin-right:15px;\r\n                \r\n            }\r\n        .facturare {\r\n            display:flex;\r\n        }\r\n        \r\n        .payment,.shipping {\r\n            margin:5% 0;\r\n        }\r\n        .quantityCartPage input[type=number] {\r\n            font-size: 1rem;\r\n            height:25px;\r\n        }\r\n        .quantityCartPage {\r\n            display:flex;\r\n            align-items: center;\r\n        }\r\n        footer {\r\n            height:250px;    \r\n        }\r\n        .cartWithoutHeader {\r\n            display:flex;\r\n            justify-content: center;\r\n        }\r\n        .cartWithoutHeaderAndPayment {\r\n            width:60%;\r\n        }\r\n        footer h4 {\r\n            font-weight:800;\r\n            font-size:2.2rem;\r\n        }\r\n        \r\n        .footerOne {\r\n            font-weight: 500;\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerTwo {\r\n\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerThree {\r\n            margin-top:3%;\r\n            font-size:1rem;\r\n        }\r\n        \r\n    }\r\n    \r\n    \r\n\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/"],"sourceRoot":""}]);
+___CSS_LOADER_EXPORT___.push([module.id, "/* Box Model Hack */\r\n:root{  \r\n    \r\n    --toastify-color-success: #346751;\r\n    --toastify-color-progress-light: linear-gradient(\r\n      to right,\r\n      #346751,\r\n      #5ac8fa,\r\n      #007aff,\r\n      #34aadc,\r\n      #5856d6,\r\n      #ff2d55\r\n    );\r\n  }\r\n\r\n\r\n\r\n\r\n* {\r\n    box-sizing: border-box;\r\n}\r\n\r\n/* Clear fix hack */\r\n.clearfix:after {\r\n    content: \".\";\r\n    display: block;\r\n    clear: both;\r\n    visibility: hidden;\r\n    line-height: 0;\r\n    height: 0;\r\n}\r\n\r\n.clear {\r\n   clear: both;\r\n}\r\n\r\nhtml {\r\n    background-color:rgba(23, 23, 23, 0.966);\r\n    scroll-behavior: smooth;\r\n    font-size:16px;\r\n}\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n.container-root {\r\n    display: grid;\r\n    grid-template-columns: 1fr 1fr 1fr 1fr;\r\n    grid-template-rows: 0.1fr 0.1fr 0.1fr 0.5fr 0.1fr 0.05fr;\r\n    grid-template-areas:\r\n      \"nav nav nav nav\"\r\n      \"header header header header\"\r\n      \"inter inter inter inter\"\r\n      \"main main main main\"\r\n      \"project project project project\"\r\n      \"footer footer footer footer\";\r\n    grid-gap: 0.2rem;\r\n    color:white;\r\n    height: 100%;\r\n    text-rendering: optimizeLegibility;\r\n    height:100vh;\r\n}\r\n\r\nnav {\r\n    grid-area: nav;\r\n}\r\n\r\nheader {\r\n    grid-area: header;\r\n    height:90vh;\r\n    \r\n}\r\n\r\n.inter {\r\n    grid-area: inter;\r\n}\r\n\r\nmain {\r\n    grid-area: main;\r\n    margin:0 6%;\r\n    \r\n}\r\n\r\n.project {\r\n    grid-area: project;\r\n    margin:0 6%;\r\n}\r\nfooter {\r\n    grid-area: footer;\r\n}\r\n\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* BASE STYLES\r\n/*******************************************/\r\n\r\nbody {\r\n    font-family:\"Open Sans\", sans-serif;\r\n    font-size: 16px;\r\n    line-height:1.5;\r\n    color:white;\r\n    text-rendering: optimizeLegibility;\r\n}\r\n\r\na {\r\n    text-decoration:none;\r\n    color:inherit;\r\n}\r\n\r\nul {\r\n    list-style-type: none;\r\n}\r\n\r\na:visited {\r\n    color:inherit;\r\n}\r\n\r\n\r\n.noDisplay {\r\n    display: none;\r\n}\r\n\r\n.display {\r\n    display:contents;\r\n}\r\n*:focus {\r\n    outline: 0 !important;\r\n}\r\nbutton {\r\n    outline: none;\r\n    border-style:none;\r\n}\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\nnav .container {\r\n    height: 100%;\r\n    padding-top:5vh;\r\n    border-bottom: solid 1px rgba(255,255,255,0.7);\r\n    \r\n}\r\nnav .container ul {\r\n    display:grid;\r\n    grid-template-columns:1fr 2fr 1fr ;\r\n    grid-template-rows: auto;\r\n    grid-template-areas: \"mail logo cont\";\r\n    margin-bottom:1vh;\r\n}\r\n\r\n.logo img{\r\n    width:45px;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    margin-top:-18px;\r\n    \r\n}\r\n\r\n.contLogo {\r\n    grid-area:logo;\r\n    justify-self:center;\r\n}\r\n.rightSide span {\r\n    display:none;\r\n}\r\n.rightSide {\r\n    grid-area: cont;\r\n    display:flex;\r\n    align-self: center;\r\n    font-size:0.9rem;\r\n    justify-content: end;\r\n}\r\n.cart{\r\n    display:flex;\r\n}\r\n\r\n.fa-cart-shopping{\r\n    padding-right:0.8rem;\r\n    margin-top:0.2rem;\r\n}\r\n\r\n.leftSide {\r\n    grid-area:mail;\r\n    display:none;\r\n}\r\n\r\n.menu {\r\n    grid-area:mail;\r\n    padding-left:10px;\r\n    font-size:1.2rem;\r\n}\r\n.back {\r\n    display:none;\r\n}\r\n\r\n.cartAmount {\r\n    margin-left: -5px;\r\n}\r\n\r\n.cart{\r\n    display:flex;\r\n    padding-right: 10px;\r\n}\r\n\r\n.mailMenu {\r\n    position:absolute;\r\n    top:65px;\r\n    background-color: white;\r\n    color:black;\r\n    font-size:0.9rem;\r\n    padding:2px 2%;\r\n    transition: opacity 1s ease-out;\r\n}\r\n\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n.headerhomeScreen {\r\n    padding-top:30px;\r\n    font-family: 'Cinzel', serif;\r\n    font-size:25px;\r\n    font-weight:500;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.headerhomeScreen img {\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.headerhomeScreen .firstSection {\r\n    width:50%;\r\n    max-width:400px;\r\n    min-width:200px;\r\n    position:absolute;\r\n    left:37%;\r\n    top:15vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    padding-top:10px;\r\n    z-index: -1;\r\n    margin-top:50px;\r\n}\r\n\r\n.headerhomeScreen .secondSection {\r\n    position:absolute;\r\n    left:10%;\r\n    top:45vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    font-size: calc(26px + 6 * ((100vw - 320px) / 250))\r\n}\r\n\r\n.veziProdusle a {\r\n    display: block;\r\n    height: 20px;;\r\n    width: fit-content;\r\n}\r\n\r\n.veziProduseleSpan {\r\n    display:flex;\r\n    background-color: white;\r\n    outline: 0;\r\n    border: black solid 1px;\r\n    height: 30px;\r\n    font-family: 'Niramit', sans-serif;\r\n    color:black;\r\n    border-radius: 5px;\r\n    font-weight: 500;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 900));\r\n    width:70%;\r\n    justify-content: center;\r\n    align-items: center;\r\n    padding-top:2px;\r\n\r\n}\r\n\r\n\r\n.headerhomeScreen .lastSection {\r\n    position:absolute;\r\n    left:auto;\r\n    top:auto;\r\n    bottom:25px;\r\n    right:25px;\r\n    font-size:0.9rem;\r\n    letter-spacing: 1px;\r\n    \r\n}\r\n\r\n.headerhomeScreen .lastSection i {\r\n    padding-left:7px;\r\n}\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n.inter {\r\n    white-space: nowrap;\r\n    text-transform: uppercase;\r\n    font-weight: 600;\r\n    margin-bottom: 10px;\r\n    padding-top:20px;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center ;\r\n}\r\n\r\n.inter h2 {\r\n    display:inline-block;\r\n    width:fit-content;\r\n    padding:0px 10px;\r\n}\r\n\r\n\r\n.inter h2:hover {\r\n    cursor: pointer;\r\n}\r\n\r\n.inter h2:after {\r\n    display:block;\r\n    content: '';\r\n    border-bottom: solid 2px white; \r\n    transform: scaleX(0);  \r\n    transition: transform 250ms ease-in-out;\r\n}\r\n.inter h2:hover:after { \r\n    transform: scaleX(1); \r\n}\r\n\r\n.inter h2:after{  \r\n    transform-origin: 0% 50%; \r\n}\r\n\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n.shop {\r\n    display:grid;\r\n    grid-template-columns: repeat(2, 1fr);\r\n    column-gap:20px;\r\n    row-gap: 20px;\r\n    padding-bottom:20px;\r\n    border-bottom:rgba(255, 255, 255, 0.555) 1px solid;\r\n    text-align: center;\r\n}\r\n.item>div {\r\n    background:rgba(0, 0, 0, 0.425);\r\n    padding:8px 10px 20px;\r\n    height: fit-content;\r\n    font-size:calc(10px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center;\r\n    border-radius: 5px;\r\n}\r\n.shop img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.shop p{\r\n    display: inline-block;\r\n    padding:10px 0 2px 0;\r\n    text-align: center;\r\n    font-weight:500;\r\n}\r\n\r\n.priceQuantity .buttons {\r\n    display:none;\r\n    justify-content: center;\r\n}\r\n\r\n.productButtons {\r\n    display:flex;\r\n    justify-content: space-around;\r\n    align-items: center;\r\n    padding-top:10px;\r\n}\r\n.productButtons a{\r\n    display:block;\r\n    height: fit-content;\r\n}\r\n.productButtons button {\r\n    height:calc(25px + 6 * ((100vw - 320px) / 200));\r\n    font-size:calc(6px + 6 * ((100vw - 320px) / 200));\r\n    font-weight: 600;\r\n    color:white;\r\n    border-radius: 7px;\r\n    cursor: pointer;\r\n    border:none;\r\n    width:50%;\r\n}\r\n.productButtons button:first-child {\r\n    background-color: #346751;\r\n    margin-right:5%\r\n}\r\n\r\n.productButtons button:first-child:hover {\r\n    background-color: #2c5744;\r\n}\r\n.productButtons button:last-child {\r\n    background-color:#D65A31 ;\r\n}\r\n\r\n.productButtons button:last-child:hover {\r\n    background-color:rgb(180, 86, 43) ; \r\n}\r\n\r\n.productDetailsDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.productDetailsDimension,\r\n.productDetailsDimension * {\r\n    display:flex;\r\n    width:75px;\r\n    position: relative;\r\n\r\n}\r\n.productDetailsDimension {\r\n    background-color: #E6E6E6;\r\n    height:19px;\r\n    border-radius: 5px;\r\n    margin:5% 0;\r\n}\r\n.productDetailsDimension select {\r\n    position:relative;\r\n    bottom:1px;\r\n    font-size: 0.6rem;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:12px;\r\n\r\n}\r\n.productDetailsDimension select:active, .productDetailsDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.productDetailsDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n\r\n.cartDrawer {\r\n    display:none;\r\n    position:fixed;\r\n    height:100vh;\r\n    width:300px;\r\n    top:0;\r\n    right:0;\r\n    background-color: white;\r\n    color:black;\r\n    overflow: scroll;\r\n    overflow-x: hidden;\r\n    flex-direction: column;\r\n    -webkit-user-select: none;\r\n    -moz-user-select: none;\r\n    -ms-user-select: none;\r\n    user-select: none;\r\n}\r\n.drawerContainer {\r\n    position: fixed;\r\n    display: none;\r\n    width: 100%;\r\n    height: 100%;\r\n    top: 0;\r\n    left: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    background-color: rgba(0,0,0,0.5);\r\n    z-index: 2;\r\n}\r\n\r\n.cartDrawer::-webkit-scrollbar {\r\n    width:0.5rem;\r\n}\r\n.cartDrawer::-webkit-scrollbar-track {\r\n    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);\r\n}\r\n.cartDrawer::-webkit-scrollbar-thumb {\r\n    background-color: darkgrey;\r\n    outline: 1px solid slategrey;\r\n}\r\n\r\n.titleCartDrawer {\r\n    width:50%;\r\n    margin: 10px auto;\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n    font-weight: 600;\r\n}\r\n\r\n.cartDrawer main {\r\n    margin:5% 5% 0%;\r\n    \r\n}\r\n.closeDrawerSection {\r\n    display:flex;\r\n    justify-content: end;\r\n    margin:10px\r\n}\r\n.closeDrawer {\r\n    \r\n    cursor:pointer;\r\n    background-color: white;\r\n    border: none;\r\n}\r\n.cartDrawerDetails {\r\n    padding-top:5%;\r\n    padding-bottom: 1%;\r\n    grid-template-columns: 3fr 1fr 1fr\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    padding-left:5px;\r\n}\r\n\r\n\r\n.cartDrawerDetails div {\r\n    text-align: center;\r\n    align-self: center;\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    display:flex;\r\n}\r\n.cartProductImg {\r\n    display:flex;\r\n    width:40%;\r\n    justify-content: center;\r\n    \r\n}\r\n.cartProductImg img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n.cartProduct {\r\n    display:flex;\r\n    width:100%;\r\n}\r\n\r\n.cartProduct p {\r\n    width:95%;\r\n    font-weight: 500;\r\n}\r\n.cartProductDescCant {\r\n    padding-left: 5%;\r\n}\r\n.cart-item {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    margin-bottom:5%;\r\n    flex-direction: column;\r\n    border-bottom: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-bottom:10px;\r\n    font-size:0.9rem;\r\n}\r\n.cart-item:first-child {\r\n    border-top: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-top:10px;\r\n}\r\n.cartDrawer .quantity {\r\n    width:50px;\r\n    height:20px;\r\n    border:none;\r\n    text-align: center;\r\n    font-size:0.9rem;\r\n    border:1px rgba(128, 128, 128, 0.445) solid\r\n}\r\n\r\n.cartDrawerPriceSpan {\r\n    color:gray;\r\n    padding-right:3px;\r\n}\r\n\r\n.cartDrawer .buttons {\r\n    display:flex;\r\n}\r\n\r\n.xInDrawer {\r\n    align-self: end;\r\n    cursor: pointer;\r\n    order:-1\r\n}\r\n\r\n.totalDrawer {\r\n    font-size:1rem;\r\n    width:60%;\r\n    margin:0 auto;\r\n    text-align: center;\r\n}\r\n.totalDrawer span {\r\n    display:block\r\n}\r\n\r\n.buttonCartDrawer {\r\n    background-color:rgb(255, 106, 61);\r\n    height:35px;\r\n    font-size:1.2rem;\r\n    color:white;\r\n    font-weight: 600;\r\n    margin-top:20px;\r\n    padding:0 40px;;\r\n    border-radius:8px;\r\n    border-color:white;\r\n    cursor:pointer;\r\n}\r\n\r\n.buttonDrawerContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n    align-items: center;\r\n}\r\n.buttonCartDrawer:hover {\r\n    background-color:rgb(235, 96, 54); ;\r\n}\r\n\r\n.containerC {\r\n    text-align: center;\r\n}\r\n\r\n\r\n.cartDrawer {\r\n    transition: left 0.3s ease-in-out;\r\n}\r\n\r\n.cartDrawer:focus-within {\r\n    right: 0;\r\n}\r\n\r\n.cartDrawer:focus {\r\n    outline: 0;\r\n}\r\n\r\ninput[type=number] {\r\n    /*for absolutely positioning spinners*/\r\n    position: relative; \r\n    padding: 5px;\r\n    padding-right: 25px;\r\n}\r\n\r\ninput[type=number]::-webkit-inner-spin-button,\r\ninput[type=number]::-webkit-outer-spin-button {\r\n    opacity: 1;\r\n}\r\n\r\ninput[type=number]::-webkit-outer-spin-button, \r\ninput[type=number]::-webkit-inner-spin-button {\r\n    -webkit-appearance: inner-spin-button !important;\r\n    width: 20px;\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    height: 100%;\r\n}\r\n\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n\r\n.project {\r\n    text-align: center;\r\n    color:white;\r\n    padding:20px 0;\r\n}\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n.cartContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n\r\n.headerCart  {\r\n    display:flex;\r\n    margin:1% 5% 5%;\r\n    justify-content: center;\r\n    align-items:center ;\r\n    font-size:1.2rem;\r\n    height: fit-content;\r\n}\r\n.cartContainer footer {\r\n    margin-top: auto;\r\n}\r\n\r\n.totalCart span {\r\n    display:block;\r\n}\r\n\r\n.emptyCart {\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.cartItemCartPage {\r\n    display:flex;\r\n    flex-direction: column;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin-bottom: 25px;\r\n}\r\n.xInCart {\r\n    order:-1;\r\n    text-align: end;\r\n    padding-bottom: 10px;\r\n    margin-top:-5px;\r\n    font-size:1rem;\r\n}\r\n.cartImg img{\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.quantityCartPage {\r\n    width:50px;\r\n    display:flex;\r\n    align-items: center;\r\n}\r\n.descP {\r\n    font-weight: 600;\r\n}\r\n\r\n.backCart {\r\n    width:fit-content;\r\n    margin:1% 5% 0;\r\n    font-size: 0.9rem;\r\n    cursor:pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.quantityCartPage input[type=number] {\r\n    padding-block:2px;\r\n    text-align: center;\r\n    height:19px;\r\n    margin-left:5px;\r\n}\r\n\r\n.cartPagePriceSpan {\r\n    color:lightgrey;\r\n    font-size:0.9rem\r\n}\r\n.priceCartPage {\r\n    color:#f86837;\r\n    font-size:1.1rem;\r\n}\r\n.detailsCartPage {\r\n    display:flex;\r\n    justify-content: end;\r\n}\r\n.shipping {\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin:0 5%;\r\n}\r\n\r\n.shipping h2:first-child{\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n.personalInfo h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.personalInfo span {\r\n    display:block;\r\n    text-transform: uppercase;\r\n    margin-top:10px;\r\n    \r\n}\r\n.personalInfo input {\r\n    all:unset;\r\n    width: 95%;\r\n    height: 23px;\r\n    background-color: rgb(240, 243, 247);\r\n    color:black;\r\n    padding-left:10px;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.payment {\r\n    margin:5% 5%;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n}\r\n\r\n.facturare {\r\n    margin-top:10px;\r\n    \r\n}\r\n.payment h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n\r\n.totalCart {\r\n    margin:5%;\r\n    padding:5%;\r\n    border:1px solid white;\r\n    margin-block:25px;\r\n    font-size:0.9rem;\r\n    border-radius: 10px;\r\n\r\n}\r\n\r\n.totalCart h3 {\r\n    font-size:1.2rem;\r\n    text-align: center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.totalCart ul {\r\n    margin-bottom:20px;\r\n}\r\n.totalCart ul li span {\r\n    display:inline;\r\n}\r\n.totalCart > span {\r\n    font-size: 1.1rem;\r\n    text-align: center;\r\n}\r\n.paymentButton {\r\n    display:flex;\r\n    justify-content: center;\r\n    margin-bottom:25px;\r\n}\r\n.checkout {\r\n    background-color:#ee693d;\r\n    outline:0;\r\n    border:0;\r\n    width:160px;\r\n    color:rgba(255, 255, 255, 0.863);\r\n    height:35px;\r\n    border-radius:5px;\r\n    font-size:1.1rem;\r\n    font-weight: 600;\r\n    cursor:pointer;\r\n}\r\n\r\n.checkout:hover {\r\n    background-color:#db5c32;\r\n}\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* Single Item\r\n/*******************************************/\r\n\r\n\r\n.singleItemMain {\r\n    margin:2% 10% 5%;\r\n    color: white(0, 0, 0, 0.829);\r\n}\r\n.singleItemContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n.singleItemContainer footer {\r\n    margin-top: auto;\r\n}\r\n.firstSectionProdus img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n\r\n}\r\n\r\n.secondSectionProdus h1 {\r\n    text-align: center;\r\n    font-size:1.7rem;\r\n    font-weight: 700;\r\n    margin-bottom: 50px;\r\n}\r\n\r\n.secondSectionProdus input {\r\n    width:22px;\r\n    height:19px;\r\n    text-align: center;\r\n    border-radius:0px;\r\n    outline: 0;\r\n    border: 0;\r\n}\r\n\r\n.secondSectionProdus ul li {\r\n    display:grid;\r\n    grid-template-columns: 1fr 1fr 1fr;\r\n    grid-template-areas:\"left . right\";\r\n    margin-bottom: 10px;\r\n    border-bottom: 2px dotted lightgrey;\r\n    padding-bottom: 9px;\r\n    \r\n}\r\n\r\n.leftProduct {\r\n    grid-area:left;\r\n} \r\n.rightProduct {\r\n    grid-area:right;\r\n    justify-self: center;\r\n}\r\n\r\n.greutate {\r\n    font-size: 0.8rem;\r\n    font-weight: 400;\r\n}\r\n#gravura1,#gravura2 {\r\n    display:flex;\r\n    \r\n    align-items: center;\r\n}\r\n#gravura1 .leftProduct, #gravura2 .leftProduct {\r\n    width:fit-content;\r\n    padding-right:10px;\r\n    white-space: nowrap\r\n}\r\n\r\n#gravura1 .rightProduct, #gravura2 .rightProduct {\r\n    width:50%;\r\n}\r\n\r\n#gravura1 input, #gravura2 input {\r\n    width:80%;\r\n    background-color:inherit;\r\n    border-bottom: 1px solid white;\r\n    color:white;\r\n    text-align: start;\r\n    padding-left: 5px;\r\n}\r\n#custom-select {\r\n    display:flex;\r\n    justify-content: space-between;\r\n}\r\n#custom-select .rightProduct {\r\n    \r\n    justify-self: center;\r\n}\r\n\r\n#custom-select button:first-child {\r\n    margin-right:-2px;\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n\r\n#custom-select button:nth-child(2){\r\n    border-radius: 0;\r\n}\r\n\r\n\r\n.lastSpan {\r\n    display: block;\r\n}\r\n\r\n.lastSectionProdus {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    text-align: center;\r\n    align-items: center;\r\n    margin-bottom:50px;\r\n}\r\n\r\n.lastSectionProdus div {\r\n    display:flex;\r\n    text-align: center;\r\n    align-items: center;\r\n}\r\n\r\n.lastSectionProdus div span {\r\n    color:grey;\r\n}\r\n\r\n.lastSectionProdus h3 {\r\n    color:#FF7700;\r\n    font-size:1.7rem;\r\n    font-weight: 500;\r\n    padding-right: 10px;\r\n}\r\n.secondSectionProdus li > span {\r\n    font-weight: 600;\r\n}\r\n\r\n.cartAdd {\r\n    background-color: #FF7700;\r\n    color: white;\r\n    padding:10px;\r\n    border-radius:5px;\r\n    cursor:pointer;\r\n}\r\n\r\n.support button {\r\n    background: #E6E6E6;\r\n    border: 1px solid black;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n    padding:5px 10px;\r\n    text-align: center;\r\n}\r\n\r\n.support button:focus {\r\n    background: #e5e5e5;\r\n    outline: none;\r\n    -webkit-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n       -moz-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n            box-shadow: inset 0px 0px 5px #c1c1c1;\r\n}\r\n\r\n\r\n.support button:first-child {\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n.support button:last-child {\r\n    margin-left:-2px;\r\n    border-top-left-radius: 0;\r\n    border-bottom-left-radius: 0;\r\n}\r\n\r\n\r\n.quantity {\r\n    display:flex;\r\n    justify-content: center;\r\n    \r\n}\r\n\r\n.quantityButtons {\r\n    padding-left:5px;\r\n    margin-top:-1px;\r\n}\r\n.quantityButtons input {\r\n    width:25px;\r\n}\r\n.quantity input[value] {\r\n    font-size:0.5rem;\r\n    text-align: center;\r\n    border-radius: 0;\r\n}\r\n#custom-select button:focus {\r\n    background-color:white\r\n}\r\n#custom-select button:active {\r\n    background-color: #c1c1c1;\r\n}\r\n\r\n#custom-select .rightProduct {\r\n    display: flex;\r\n    justify-content:center;\r\n}\r\n.singleItemDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.singleItemDimension,\r\n.singleItemDimension * {\r\n    width:85px;\r\n    height:25px;\r\n    position: relative;\r\n    \r\n}\r\n.singleItemDimension {\r\n    position: relative;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    \r\n}\r\n.singleItemDimension select {\r\n    position:relative;\r\n    bottom:2px;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:5px;\r\n    font-size:0.8rem;\r\n}\r\n.singleItemDimension select:active, .singleItemDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.singleItemDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n\r\n.backSingleItem {\r\n    white-space: nowrap;\r\n    width:fit-content;\r\n    margin:1% 5%;\r\n}\r\n/******************************************\r\n/* Single Product\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n\r\nfooter {\r\n    background-color: #346751 ;\r\n    height:200px;    \r\n    color:black;\r\n  \r\n}\r\n\r\n.footer {\r\n    height:100%;\r\n    margin:0 10%;\r\n    padding-top:2%;\r\n}\r\n\r\nfooter a, footer span {\r\n    display:inline-block;\r\n}\r\n\r\nfooter h4 {\r\n    font-weight:800;\r\n    font-size:1.6rem;\r\n    text-align: center;\r\n}\r\n.titleFooter{\r\n    text-align: center;\r\n}\r\n.footerOne {\r\n    text-align: center;\r\n    font-weight: 500;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.footerTwo {\r\n    text-align:center;\r\n    font-size:1.4rem;\r\n}\r\n\r\n.footerThree {\r\n    margin-top:3%;\r\n    text-align: center;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.footerTwo :not(:last-child){\r\n    padding-right: 10px;\r\n}\r\n\r\n.footerOne :first-child {\r\n    padding-right:10px;\r\n}\r\n\r\n.footerOne :last-child {\r\n    padding-left:10px;\r\n}\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/\r\n\r\n@media only screen and (min-width: 700px) and (max-width: 1200px) {\r\n    body{\r\n        margin:0 6%;\r\n    }\r\n    main {\r\n        margin:0;\r\n    }\r\n    .logo img{\r\n        width:65px;\r\n    }\r\n    .rightSide {\r\n        font-size:1.3rem;\r\n    }\r\n    .menu {\r\n        \r\n        font-size:1.3rem;\r\n        display:flex;\r\n        align-items: center;\r\n    }\r\n    .fa-bars {\r\n        cursor:pointer;\r\n    }\r\n    .mailMenu {\r\n        top:80px;\r\n        font-size:1rem;\r\n        padding:2px 2%;\r\n       \r\n    }\r\n    header {\r\n        height:90vh\r\n    }\r\n    header .firstSection {\r\n        top:12vh;\r\n        max-width:600px;\r\n        width:100%;\r\n    }\r\n    header .secondSection {\r\n        left:15%;\r\n        top:48vh;\r\n        \r\n    }\r\n    header .secondSection h1 {\r\n        font-size:2.8rem;\r\n    }\r\n    .veziProduseleSpan {\r\n        height:45px;\r\n        font-size:1.5rem;\r\n        padding-top:3px;\r\n        width:65%;\r\n    }\r\n    .inter {\r\n        margin-bottom: 20px;\r\n    }\r\n    .headerhomeScreen .lastSection {\r\n        font-size:1.3rem;\r\n    }\r\n    .shop {\r\n        display:grid;\r\n        grid-template-columns: repeat(3, 1fr);\r\n        column-gap:20px;\r\n        row-gap: 20px;\r\n        padding-bottom:20px;\r\n    }\r\n\r\n    .productButtons button {\r\n        height:35px;\r\n        font-size:calc(6px + 6 * ((100vw - 320px) / 450));\r\n        border-radius: 8px;\r\n    }\r\n    \r\n    .project {\r\n        font-size:calc(8px + 6 * ((100vw - 330px) / 300));\r\n    }\r\n    .cartDrawer {\r\n        width:400px;\r\n    }\r\n    .titleCartDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .cart-item {\r\n        font-size:1.2rem;\r\n    }\r\n    .cartDrawerPriceSpan {\r\n        padding-right: 6px;\r\n    }\r\n    .totalDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .productDetailsDimension, .singleItemDimension {\r\n        width:120px;\r\n    }\r\n    .productDetailsDimension,.singleItemDimension {\r\n        height:25px;\r\n    \r\n    }\r\n    .item>div {\r\n        font-size: calc(6px + 6 * ((100vw - 320px) / 300))\r\n    }\r\n    .productDetailsDimension select{\r\n        width:90px;\r\n        font-size:1.1rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n    \r\n    }\r\n    .productDetailsDimension select option,.singleItemDimension select option {\r\n        font-size:0.7rem;\r\n    }\r\n    .cartDrawer .quantity {\r\n        width:55px;\r\n        height:28px;\r\n        font-size:1.1rem;\r\n    }\r\n    \r\n    .singleItemMain {\r\n        display:flex;\r\n        justify-content: space-between;\r\n        margin:1% 0 5%;\r\n        \r\n    }\r\n    .singleItemMain .leftProduct {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .singleItemDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n        padding-top:4px;\r\n    }\r\n    .buttonCartDrawer {\r\n        height:50px;\r\n        font-size:1.4rem;\r\n    }\r\n    .firstSectionProdus{\r\n        margin-right: 5%;\r\n    }\r\n    .gravuraInputs input {\r\n        font-size:1.2rem;\r\n        padding-bottom: 2px;\r\n    }\r\n    .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .lastSpan{\r\n        font-size:1.3rem;\r\n    }\r\n    .cartItemCartPage{\r\n        display:flex;\r\n        flex-direction: row;\r\n        align-items: center;\r\n    }\r\n\r\n    .cartImg {\r\n        width:50%\r\n    }\r\n    .detailsCartPage {\r\n        width:18%\r\n    }\r\n    .descP {\r\n        padding-bottom:10px;\r\n    }\r\n    .cartDesc {\r\n        padding-left:2%;\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n\r\n    \r\n    .headerCart,.emptyCart  {\r\n        font-size:calc(25px + 6 * ((100vw - 500px) / 600));\r\n        font-weight:500;\r\n    }\r\n    .personInfo input {\r\n        height:25px;\r\n    }\r\n    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n        font-size:calc(18px + 6 * ((100vw - 500px) / 600))\r\n\r\n    }\r\n    .totalCart h3 {\r\n        font-size:calc(22px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .xInCart {\r\n        order:1;\r\n        align-self:start;\r\n    }\r\n    .backCart,.backSingleItem {\r\n        white-space: nowrap;\r\n        width:fit-content;\r\n        font-size:1.1rem;\r\n    }\r\n    .checkout{\r\n        width:200px;\r\n        height:45px;\r\n    }\r\n    input[type=checkbox]\r\n    {\r\n      /* Double-sized Checkboxes */\r\n        -ms-transform: scale(1.5); /* IE */\r\n        -moz-transform: scale(1.5); /* FF */\r\n        -webkit-transform: scale(1.5); /* Safari and Chrome */\r\n        -o-transform: scale(1.5); /* Opera */\r\n        transform: scale(1.5);\r\n        padding: 10px;\r\n        margin-right:15px;\r\n    }\r\n    footer {\r\n        height:220px;  \r\n    }\r\n    \r\n    footer h4 {\r\n        font-size:1.8rem;\r\n    }\r\n\r\n    .footerOne {\r\n        font-size:1.3rem;\r\n    }\r\n    \r\n    .footerTwo {\r\n        font-size:1.5rem;\r\n    }\r\n    \r\n    .footerThree {\r\n        font-size:0.8rem;\r\n    }\r\n}\r\n\r\n\r\n@media only screen and (min-width: 1200px) {\r\n        body{\r\n            margin:0 6%;\r\n        }\r\n        main {\r\n            margin:0;\r\n        }\r\n        .logo img{\r\n            width:60px;\r\n        }\r\n        .rightSide {\r\n            font-size:1.2rem;\r\n        }\r\n        .menu {\r\n            font-size:1.2rem;\r\n            display:flex;\r\n            align-items: center;\r\n            display:none;\r\n        }\r\n        .leftSide {\r\n            display:flex;\r\n            font-size:1.2rem;\r\n            align-items: center;\r\n        }\r\n        header {\r\n            height:90vh\r\n        }\r\n        .headerhomeScreen .firstSection {\r\n            top:10%;\r\n        }\r\n        .headerhomeScreen .firstSection img {\r\n            width:400px;\r\n        }\r\n        header .secondSection {\r\n            left:15%;\r\n            top:48vh;\r\n            \r\n        }\r\n        header .secondSection h1 {\r\n            font-size:calc(50px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n\r\n        .headerhomeScreen .secondSection {\r\n            left:15%;\r\n        }\r\n        .veziProduseleSpan {\r\n            height:55px;\r\n            font-size:1.7rem;\r\n            padding-top:3px;\r\n            width:55%;\r\n        }\r\n        .headerhomeScreen .lastSection {\r\n            font-size:1.5rem;\r\n        }\r\n        .inter {\r\n            margin-bottom: 55px;\r\n            font-size: calc(14px + 6 * ((100vw - 320px) / 600));\r\n        }\r\n\r\n        .shop {\r\n            display:grid;\r\n            grid-template-columns: repeat(4, 1fr);\r\n            column-gap:20px;\r\n            row-gap: 20px;\r\n            padding-bottom:20px;\r\n        }\r\n        .item>div {\r\n            border-radius: 10px;\r\n        }\r\n        .details {\r\n            font-size:calc(10px + 6 * ((100vw - 320px) / 900))\r\n        }\r\n\r\n        .cartDrawer {\r\n            width:400px;\r\n        }\r\n        .titleCartDrawer {\r\n            font-size:1.3rem;\r\n        }\r\n        .cart-item {\r\n            font-size:1.2rem;\r\n        }\r\n        .cartDrawerPriceSpan {\r\n            padding-right: 6px;\r\n        }\r\n        .totalDrawer {\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawer .quantity {\r\n            width:55px;\r\n            height:28px;\r\n            font-size:1.2rem;\r\n        }\r\n        .productButtons button {\r\n            height:45px;\r\n            font-size:calc(9px + 6 * ((100vw - 320px) / 900));\r\n            border-radius: 8px;\r\n        }\r\n        .project {\r\n            margin:auto;\r\n            width:50%;\r\n            color:white;\r\n            padding:50px 0;\r\n            font-size:calc(10px + 6 * ((100vw - 350px) / 500));\r\n        }\r\n        .productDetailsDimension, .singleItemDimension {\r\n            width:150px;\r\n            height:30px;\r\n        }\r\n        .productDetailsDimension {\r\n            margin:3% 0;\r\n        }\r\n        .productDetailsDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 15px;\r\n            bottom:0;\r\n        }\r\n        .productDetailsDimension select option {\r\n            font-size:1.2rem;\r\n\r\n        }\r\n        .buttonCartDrawer {\r\n            height:50px;\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawerPrice{\r\n            font-size:1.2rem\r\n        }\r\n        .cartDimensiune{\r\n            font-size:1.2rem\r\n        }\r\n        .singleItemMain {\r\n            width:70%;\r\n            display:flex;\r\n            justify-content: space-between;\r\n            margin:5% auto;\r\n        }\r\n        .singleItemMain .leftProduct {\r\n            font-size:1.3rem;\r\n        }\r\n    \r\n        .singleItemDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 13px;\r\n            bottom:0;\r\n            padding-top:4px;\r\n        }\r\n        .secondSectionProdus {\r\n            width:60%\r\n        }\r\n        \r\n        .firstSectionProdus{\r\n            margin-right: 5%;\r\n        }\r\n    \r\n        .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n            font-size:1.2rem;\r\n        }\r\n        .lastSectionProdus h3{\r\n            font-size:1.7rem;\r\n        }\r\n        .lastSpan{\r\n            font-size:1.3rem;\r\n        }\r\n        #custom-select button:nth-child(2){\r\n            border-radius: 0;\r\n        }\r\n\r\n        .backSingleItem{\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.2rem;\r\n            margin-left:20px;\r\n            white-space: nowrap;\r\n        }\r\n        .backCart {\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.2rem;\r\n            margin-left:20px;\r\n        }\r\n        .cartImg {\r\n            width:45%\r\n        }\r\n        .cartItemCartPage{\r\n            display:flex;\r\n            flex-direction: row;\r\n            align-items: center;\r\n        }\r\n        #gravura1 input, #gravura2 input {\r\n            font-size:1.2rem;\r\n        }\r\n        .detailsCartPage {\r\n            width:18%\r\n        }\r\n        .descP {\r\n            padding-bottom:10px;;\r\n        }\r\n        .cartDesc {\r\n            padding-left:2%;\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 800))\r\n        }\r\n    \r\n        \r\n        .headerCart,.emptyCart  {\r\n            font-size:calc(20px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500;\r\n        }\r\n        .personInfo input {\r\n            height:25px;\r\n        }\r\n        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n            font-size:calc(12px + 6 * ((100vw - 500px) / 800))\r\n    \r\n        }\r\n        .totalCart h3 {\r\n            font-size:calc(16px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500\r\n        }\r\n        .totalCart {\r\n            margin-top:0;\r\n            width:100%;\r\n        }\r\n        .totalAndButtonCart {\r\n            display:flex;\r\n            flex-direction: column;\r\n            align-items: center;\r\n            margin-left:3%;\r\n        }\r\n        .xInCart {\r\n            order:1;\r\n            align-self:start;\r\n        }\r\n\r\n        .checkout{\r\n            width:280px;\r\n            height:55px;\r\n            white-space: nowrap;\r\n        }\r\n        input[type=checkbox]\r\n            {\r\n              /* Double-sized Checkboxes */\r\n                -ms-transform: scale(1.7); /* IE */\r\n                -moz-transform: scale(1.7); /* FF */\r\n                -webkit-transform: scale(1.7); /* Safari and Chrome */\r\n                -o-transform: scale(1.7); /* Opera */\r\n                transform: scale(1.7);\r\n                padding: 10px;\r\n                margin-right:15px;\r\n                \r\n            }\r\n        .facturare {\r\n            display:flex;\r\n        }\r\n        \r\n        .payment,.shipping {\r\n            margin:5% 0;\r\n        }\r\n        .quantityCartPage input[type=number] {\r\n            font-size: 1rem;\r\n            height:25px;\r\n        }\r\n        .quantityCartPage {\r\n            display:flex;\r\n            align-items: center;\r\n        }\r\n        footer {\r\n            height:250px;    \r\n        }\r\n        .cartWithoutHeader {\r\n            display:flex;\r\n            justify-content: center;\r\n        }\r\n        .cartWithoutHeaderAndPayment {\r\n            width:60%;\r\n        }\r\n        footer h4 {\r\n            font-weight:800;\r\n            font-size:2.2rem;\r\n        }\r\n        \r\n        .footerOne {\r\n            font-weight: 500;\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerTwo {\r\n\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerThree {\r\n            margin-top:3%;\r\n            font-size:1rem;\r\n        }\r\n        \r\n    }\r\n    \r\n    \r\n\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/", "",{"version":3,"sources":["webpack://./src/App.css"],"names":[],"mappings":"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AU;IACd;IACA;QACI,gBAAgB;IACpB;IACA;;QAEI,gBAAgB;QAChB,YAAY;QACZ,mBAAmB;IACvB;IACA;QACI,cAAc;IAClB;IACA;QACI,QAAQ;QACR,cAAc;QACd,cAAc;;IAElB;IACA;QACI;IACJ;IACA;QACI,QAAQ;QACR,eAAe;QACf,UAAU;IACd;IACA;QACI,QAAQ;QACR,QAAQ;;IAEZ;IACA;QACI,gBAAgB;IACpB;IACA;QACI,WAAW;QACX,gBAAgB;QAChB,eAAe;QACf,SAAS;IACb;IACA;QACI,mBAAmB;IACvB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,YAAY;QACZ,qCAAqC;QACrC,eAAe;QACf,aAAa;QACb,mBAAmB;IACvB;;IAEA;QACI,WAAW;QACX,iDAAiD;QACjD,kBAAkB;IACtB;;IAEA;QACI,iDAAiD;IACrD;IACA;QACI,WAAW;IACf;IACA;QACI,gBAAgB;IACpB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,kBAAkB;IACtB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,WAAW;IACf;IACA;QACI,WAAW;;IAEf;IACA;QACI;IACJ;IACA;QACI,UAAU;QACV,gBAAgB;QAChB,kBAAkB;QAClB,QAAQ;;IAEZ;IACA;QACI,gBAAgB;IACpB;IACA;QACI,UAAU;QACV,WAAW;QACX,gBAAgB;IACpB;;IAEA;QACI,YAAY;QACZ,8BAA8B;QAC9B,cAAc;;IAElB;IACA;QACI,gBAAgB;IACpB;;IAEA;QACI,UAAU;QACV,gBAAgB;QAChB,kBAAkB;QAClB,QAAQ;QACR,eAAe;IACnB;IACA;QACI,WAAW;QACX,gBAAgB;IACpB;IACA;QACI,gBAAgB;IACpB;IACA;QACI,gBAAgB;QAChB,mBAAmB;IACvB;IACA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;IACA;QACI,YAAY;QACZ,mBAAmB;QACnB,mBAAmB;IACvB;;IAEA;QACI;IACJ;IACA;QACI;IACJ;IACA;QACI,mBAAmB;IACvB;IACA;QACI,eAAe;QACf;IACJ;IACA;QACI;IACJ;;;IAGA;QACI,kDAAkD;QAClD,eAAe;IACnB;IACA;QACI,WAAW;IACf;IACA;QACI;;IAEJ;IACA;QACI;IACJ;IACA;QACI,OAAO;QACP,gBAAgB;IACpB;IACA;QACI,mBAAmB;QACnB,iBAAiB;QACjB,gBAAgB;IACpB;IACA;QACI,WAAW;QACX,WAAW;IACf;IACA;;MAEE,4BAA4B;QAC1B,yBAAyB,EAAE,OAAO;QAClC,0BAA0B,EAAE,OAAO;QACnC,6BAA6B,EAAE,sBAAsB;QACrD,wBAAwB,EAAE,UAAU;QACpC,qBAAqB;QACrB,aAAa;QACb,iBAAiB;IACrB;IACA;QACI,YAAY;IAChB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;;IAEA;QACI,gBAAgB;IACpB;AACJ;;;AAGA;QACQ;YACI,WAAW;QACf;QACA;YACI,QAAQ;QACZ;QACA;YACI,UAAU;QACd;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;YAChB,YAAY;YACZ,mBAAmB;YACnB,YAAY;QAChB;QACA;YACI,YAAY;YACZ,gBAAgB;YAChB,mBAAmB;QACvB;QACA;YACI;QACJ;QACA;YACI,OAAO;QACX;QACA;YACI,WAAW;QACf;QACA;YACI,QAAQ;YACR,QAAQ;;QAEZ;QACA;YACI;QACJ;;QAEA;YACI,QAAQ;QACZ;QACA;YACI,WAAW;YACX,gBAAgB;YAChB,eAAe;YACf,SAAS;QACb;QACA;YACI,gBAAgB;QACpB;QACA;YACI,mBAAmB;YACnB,mDAAmD;QACvD;;QAEA;YACI,YAAY;YACZ,qCAAqC;YACrC,eAAe;YACf,aAAa;YACb,mBAAmB;QACvB;QACA;YACI,mBAAmB;QACvB;QACA;YACI;QACJ;;QAEA;YACI,WAAW;QACf;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,kBAAkB;QACtB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,UAAU;YACV,WAAW;YACX,gBAAgB;QACpB;QACA;YACI,WAAW;YACX,iDAAiD;YACjD,kBAAkB;QACtB;QACA;YACI,WAAW;YACX,SAAS;YACT,WAAW;YACX,cAAc;YACd,kDAAkD;QACtD;QACA;YACI,WAAW;YACX,WAAW;QACf;QACA;YACI,WAAW;QACf;QACA;YACI,WAAW;YACX,gBAAgB;YAChB,kBAAkB;YAClB,QAAQ;QACZ;QACA;YACI,gBAAgB;;QAEpB;QACA;YACI,WAAW;YACX,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI;QACJ;QACA;YACI,SAAS;YACT,YAAY;YACZ,8BAA8B;YAC9B,cAAc;QAClB;QACA;YACI,gBAAgB;QACpB;;QAEA;YACI,WAAW;YACX,gBAAgB;YAChB,kBAAkB;YAClB,QAAQ;YACR,eAAe;QACnB;QACA;YACI;QACJ;;QAEA;YACI,gBAAgB;QACpB;;QAEA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;QACA;YACI,gBAAgB;QACpB;;QAEA;YACI,iBAAiB;YACjB,eAAe;YACf,gBAAgB;YAChB,gBAAgB;YAChB,mBAAmB;QACvB;QACA;YACI,iBAAiB;YACjB,eAAe;YACf,gBAAgB;YAChB,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI,YAAY;YACZ,mBAAmB;YACnB,mBAAmB;QACvB;QACA;YACI,gBAAgB;QACpB;QACA;YACI;QACJ;QACA;YACI,mBAAmB;QACvB;QACA;YACI,eAAe;YACf;QACJ;QACA;YACI;QACJ;;;QAGA;YACI,kDAAkD;YAClD,eAAe;QACnB;QACA;YACI,WAAW;QACf;QACA;YACI;;QAEJ;QACA;YACI,kDAAkD;YAClD;QACJ;QACA;YACI,YAAY;YACZ,UAAU;QACd;QACA;YACI,YAAY;YACZ,sBAAsB;YACtB,mBAAmB;YACnB,cAAc;QAClB;QACA;YACI,OAAO;YACP,gBAAgB;QACpB;;QAEA;YACI,WAAW;YACX,WAAW;YACX,mBAAmB;QACvB;QACA;;cAEM,4BAA4B;gBAC1B,yBAAyB,EAAE,OAAO;gBAClC,0BAA0B,EAAE,OAAO;gBACnC,6BAA6B,EAAE,sBAAsB;gBACrD,wBAAwB,EAAE,UAAU;gBACpC,qBAAqB;gBACrB,aAAa;gBACb,iBAAiB;;YAErB;QACJ;YACI,YAAY;QAChB;;QAEA;YACI,WAAW;QACf;QACA;YACI,eAAe;YACf,WAAW;QACf;QACA;YACI,YAAY;YACZ,mBAAmB;QACvB;QACA;YACI,YAAY;QAChB;QACA;YACI,YAAY;YACZ,uBAAuB;QAC3B;QACA;YACI,SAAS;QACb;QACA;YACI,eAAe;YACf,gBAAgB;QACpB;;QAEA;YACI,gBAAgB;YAChB,gBAAgB;QACpB;;QAEA;;YAEI,gBAAgB;QACpB;;QAEA;YACI,aAAa;YACb,cAAc;QAClB;;IAEJ;;;;AAIJ;;4CAE4C","sourcesContent":["/* Box Model Hack */\r\n:root{  \r\n    \r\n    --toastify-color-success: #346751;\r\n    --toastify-color-progress-light: linear-gradient(\r\n      to right,\r\n      #346751,\r\n      #5ac8fa,\r\n      #007aff,\r\n      #34aadc,\r\n      #5856d6,\r\n      #ff2d55\r\n    );\r\n  }\r\n\r\n\r\n\r\n\r\n* {\r\n    box-sizing: border-box;\r\n}\r\n\r\n/* Clear fix hack */\r\n.clearfix:after {\r\n    content: \".\";\r\n    display: block;\r\n    clear: both;\r\n    visibility: hidden;\r\n    line-height: 0;\r\n    height: 0;\r\n}\r\n\r\n.clear {\r\n   clear: both;\r\n}\r\n\r\nhtml {\r\n    background-color:rgba(23, 23, 23, 0.966);\r\n    scroll-behavior: smooth;\r\n    font-size:16px;\r\n}\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n.container-root {\r\n    display: grid;\r\n    grid-template-columns: 1fr 1fr 1fr 1fr;\r\n    grid-template-rows: 0.1fr 0.1fr 0.1fr 0.5fr 0.1fr 0.05fr;\r\n    grid-template-areas:\r\n      \"nav nav nav nav\"\r\n      \"header header header header\"\r\n      \"inter inter inter inter\"\r\n      \"main main main main\"\r\n      \"project project project project\"\r\n      \"footer footer footer footer\";\r\n    grid-gap: 0.2rem;\r\n    color:white;\r\n    height: 100%;\r\n    text-rendering: optimizeLegibility;\r\n    height:100vh;\r\n}\r\n\r\nnav {\r\n    grid-area: nav;\r\n}\r\n\r\nheader {\r\n    grid-area: header;\r\n    height:90vh;\r\n    \r\n}\r\n\r\n.inter {\r\n    grid-area: inter;\r\n}\r\n\r\nmain {\r\n    grid-area: main;\r\n    margin:0 6%;\r\n    \r\n}\r\n\r\n.project {\r\n    grid-area: project;\r\n    margin:0 6%;\r\n}\r\nfooter {\r\n    grid-area: footer;\r\n}\r\n\r\n\r\n/******************************************\r\n/* LAYOUT\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* BASE STYLES\r\n/*******************************************/\r\n\r\nbody {\r\n    font-family:\"Open Sans\", sans-serif;\r\n    font-size: 16px;\r\n    line-height:1.5;\r\n    color:white;\r\n    text-rendering: optimizeLegibility;\r\n}\r\n\r\na {\r\n    text-decoration:none;\r\n    color:inherit;\r\n}\r\n\r\nul {\r\n    list-style-type: none;\r\n}\r\n\r\na:visited {\r\n    color:inherit;\r\n}\r\n\r\n\r\n.noDisplay {\r\n    display: none;\r\n}\r\n\r\n.display {\r\n    display:contents;\r\n}\r\n*:focus {\r\n    outline: 0 !important;\r\n}\r\nbutton {\r\n    outline: none;\r\n    border-style:none;\r\n}\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\nnav .container {\r\n    height: 100%;\r\n    padding-top:5vh;\r\n    border-bottom: solid 1px rgba(255,255,255,0.7);\r\n    \r\n}\r\nnav .container ul {\r\n    display:grid;\r\n    grid-template-columns:1fr 2fr 1fr ;\r\n    grid-template-rows: auto;\r\n    grid-template-areas: \"mail logo cont\";\r\n    margin-bottom:1vh;\r\n}\r\n\r\n.logo img{\r\n    width:45px;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    margin-top:-18px;\r\n    \r\n}\r\n\r\n.contLogo {\r\n    grid-area:logo;\r\n    justify-self:center;\r\n}\r\n.rightSide span {\r\n    display:none;\r\n}\r\n.rightSide {\r\n    grid-area: cont;\r\n    display:flex;\r\n    align-self: center;\r\n    font-size:0.9rem;\r\n    justify-content: end;\r\n}\r\n.cart{\r\n    display:flex;\r\n}\r\n\r\n.fa-cart-shopping{\r\n    padding-right:0.8rem;\r\n    margin-top:0.2rem;\r\n}\r\n\r\n.leftSide {\r\n    grid-area:mail;\r\n    display:none;\r\n}\r\n\r\n.menu {\r\n    grid-area:mail;\r\n    padding-left:10px;\r\n    font-size:1.2rem;\r\n}\r\n.back {\r\n    display:none;\r\n}\r\n\r\n.cartAmount {\r\n    margin-left: -5px;\r\n}\r\n\r\n.cart{\r\n    display:flex;\r\n    padding-right: 10px;\r\n}\r\n\r\n.mailMenu {\r\n    position:absolute;\r\n    top:65px;\r\n    background-color: white;\r\n    color:black;\r\n    font-size:0.9rem;\r\n    padding:2px 2%;\r\n    transition: opacity 1s ease-out;\r\n}\r\n\r\n/******************************************\r\n/* NAVBAR\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n.headerhomeScreen {\r\n    padding-top:30px;\r\n    font-family: 'Cinzel', serif;\r\n    font-size:25px;\r\n    font-weight:500;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.headerhomeScreen img {\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.headerhomeScreen .firstSection {\r\n    width:50%;\r\n    max-width:400px;\r\n    min-width:200px;\r\n    position:absolute;\r\n    left:37%;\r\n    top:15vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    padding-top:10px;\r\n    z-index: -1;\r\n    margin-top:50px;\r\n}\r\n\r\n.headerhomeScreen .secondSection {\r\n    position:absolute;\r\n    left:10%;\r\n    top:45vh;\r\n    bottom:auto;\r\n    right:auto;\r\n    font-size: calc(26px + 6 * ((100vw - 320px) / 250))\r\n}\r\n\r\n.veziProdusle a {\r\n    display: block;\r\n    height: 20px;;\r\n    width: fit-content;\r\n}\r\n\r\n.veziProduseleSpan {\r\n    display:flex;\r\n    background-color: white;\r\n    outline: 0;\r\n    border: black solid 1px;\r\n    height: 30px;\r\n    font-family: 'Niramit', sans-serif;\r\n    color:black;\r\n    border-radius: 5px;\r\n    font-weight: 500;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 900));\r\n    width:70%;\r\n    justify-content: center;\r\n    align-items: center;\r\n    padding-top:2px;\r\n\r\n}\r\n\r\n\r\n.headerhomeScreen .lastSection {\r\n    position:absolute;\r\n    left:auto;\r\n    top:auto;\r\n    bottom:25px;\r\n    right:25px;\r\n    font-size:0.9rem;\r\n    letter-spacing: 1px;\r\n    \r\n}\r\n\r\n.headerhomeScreen .lastSection i {\r\n    padding-left:7px;\r\n}\r\n/******************************************\r\n/* HEADER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n.inter {\r\n    white-space: nowrap;\r\n    text-transform: uppercase;\r\n    font-weight: 600;\r\n    margin-bottom: 10px;\r\n    padding-top:20px;\r\n    font-size: calc(14px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center ;\r\n}\r\n\r\n.inter h2 {\r\n    display:inline-block;\r\n    width:fit-content;\r\n    padding:0px 10px;\r\n}\r\n\r\n\r\n.inter h2:hover {\r\n    cursor: pointer;\r\n}\r\n\r\n.inter h2:after {\r\n    display:block;\r\n    content: '';\r\n    border-bottom: solid 2px white; \r\n    transform: scaleX(0);  \r\n    transition: transform 250ms ease-in-out;\r\n}\r\n.inter h2:hover:after { \r\n    transform: scaleX(1); \r\n}\r\n\r\n.inter h2:after{  \r\n    transform-origin: 0% 50%; \r\n}\r\n\r\n\r\n/******************************************\r\n/* INTER\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n.shop {\r\n    display:grid;\r\n    grid-template-columns: repeat(2, 1fr);\r\n    column-gap:20px;\r\n    row-gap: 20px;\r\n    padding-bottom:20px;\r\n    border-bottom:rgba(255, 255, 255, 0.555) 1px solid;\r\n    text-align: center;\r\n}\r\n.item>div {\r\n    background:rgba(0, 0, 0, 0.425);\r\n    padding:8px 10px 20px;\r\n    height: fit-content;\r\n    font-size:calc(10px + 6 * ((100vw - 320px) / 300));\r\n    text-align:center;\r\n    border-radius: 5px;\r\n}\r\n.shop img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n\r\n.shop p{\r\n    display: inline-block;\r\n    padding:10px 0 2px 0;\r\n    text-align: center;\r\n    font-weight:500;\r\n}\r\n\r\n.priceQuantity .buttons {\r\n    display:none;\r\n    justify-content: center;\r\n}\r\n\r\n.productButtons {\r\n    display:flex;\r\n    justify-content: space-around;\r\n    align-items: center;\r\n    padding-top:10px;\r\n}\r\n.productButtons a{\r\n    display:block;\r\n    height: fit-content;\r\n}\r\n.productButtons button {\r\n    height:calc(25px + 6 * ((100vw - 320px) / 200));\r\n    font-size:calc(6px + 6 * ((100vw - 320px) / 200));\r\n    font-weight: 600;\r\n    color:white;\r\n    border-radius: 7px;\r\n    cursor: pointer;\r\n    border:none;\r\n    width:50%;\r\n}\r\n.productButtons button:first-child {\r\n    background-color: #346751;\r\n    margin-right:5%\r\n}\r\n\r\n.productButtons button:first-child:hover {\r\n    background-color: #2c5744;\r\n}\r\n.productButtons button:last-child {\r\n    background-color:#D65A31 ;\r\n}\r\n\r\n.productButtons button:last-child:hover {\r\n    background-color:rgb(180, 86, 43) ; \r\n}\r\n\r\n.productDetailsDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.productDetailsDimension,\r\n.productDetailsDimension * {\r\n    display:flex;\r\n    width:75px;\r\n    position: relative;\r\n\r\n}\r\n.productDetailsDimension {\r\n    background-color: #E6E6E6;\r\n    height:19px;\r\n    border-radius: 5px;\r\n    margin:5% 0;\r\n}\r\n.productDetailsDimension select {\r\n    position:relative;\r\n    bottom:1px;\r\n    font-size: 0.6rem;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:12px;\r\n\r\n}\r\n.productDetailsDimension select:active, .productDetailsDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.productDetailsDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n\r\n.cartDrawer {\r\n    display:none;\r\n    position:fixed;\r\n    height:100vh;\r\n    width:300px;\r\n    top:0;\r\n    right:0;\r\n    background-color: white;\r\n    color:black;\r\n    overflow: scroll;\r\n    overflow-x: hidden;\r\n    flex-direction: column;\r\n    -webkit-user-select: none;\r\n    -moz-user-select: none;\r\n    -ms-user-select: none;\r\n    user-select: none;\r\n}\r\n.drawerContainer {\r\n    position: fixed;\r\n    display: none;\r\n    width: 100%;\r\n    height: 100%;\r\n    top: 0;\r\n    left: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    background-color: rgba(0,0,0,0.5);\r\n    z-index: 2;\r\n}\r\n\r\n.cartDrawer::-webkit-scrollbar {\r\n    width:0.5rem;\r\n}\r\n.cartDrawer::-webkit-scrollbar-track {\r\n    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);\r\n}\r\n.cartDrawer::-webkit-scrollbar-thumb {\r\n    background-color: darkgrey;\r\n    outline: 1px solid slategrey;\r\n}\r\n\r\n.titleCartDrawer {\r\n    width:50%;\r\n    margin: 10px auto;\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n    font-weight: 600;\r\n}\r\n\r\n.cartDrawer main {\r\n    margin:5% 5% 0%;\r\n    \r\n}\r\n.closeDrawerSection {\r\n    display:flex;\r\n    justify-content: end;\r\n    margin:10px\r\n}\r\n.closeDrawer {\r\n    \r\n    cursor:pointer;\r\n    background-color: white;\r\n    border: none;\r\n}\r\n.cartDrawerDetails {\r\n    padding-top:5%;\r\n    padding-bottom: 1%;\r\n    grid-template-columns: 3fr 1fr 1fr\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    padding-left:5px;\r\n}\r\n\r\n\r\n.cartDrawerDetails div {\r\n    text-align: center;\r\n    align-self: center;\r\n}\r\n\r\n.cartDrawerDetails p {\r\n    display:flex;\r\n}\r\n.cartProductImg {\r\n    display:flex;\r\n    width:40%;\r\n    justify-content: center;\r\n    \r\n}\r\n.cartProductImg img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n}\r\n.cartProduct {\r\n    display:flex;\r\n    width:100%;\r\n}\r\n\r\n.cartProduct p {\r\n    width:95%;\r\n    font-weight: 500;\r\n}\r\n.cartProductDescCant {\r\n    padding-left: 5%;\r\n}\r\n.cart-item {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    margin-bottom:5%;\r\n    flex-direction: column;\r\n    border-bottom: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-bottom:10px;\r\n    font-size:0.9rem;\r\n}\r\n.cart-item:first-child {\r\n    border-top: 1px solid rgba(0, 0, 0, 0.123);\r\n    padding-top:10px;\r\n}\r\n.cartDrawer .quantity {\r\n    width:50px;\r\n    height:20px;\r\n    border:none;\r\n    text-align: center;\r\n    font-size:0.9rem;\r\n    border:1px rgba(128, 128, 128, 0.445) solid\r\n}\r\n\r\n.cartDrawerPriceSpan {\r\n    color:gray;\r\n    padding-right:3px;\r\n}\r\n\r\n.cartDrawer .buttons {\r\n    display:flex;\r\n}\r\n\r\n.xInDrawer {\r\n    align-self: end;\r\n    cursor: pointer;\r\n    order:-1\r\n}\r\n\r\n.totalDrawer {\r\n    font-size:1rem;\r\n    width:60%;\r\n    margin:0 auto;\r\n    text-align: center;\r\n}\r\n.totalDrawer span {\r\n    display:block\r\n}\r\n\r\n.buttonCartDrawer {\r\n    background-color:rgb(255, 106, 61);\r\n    height:35px;\r\n    font-size:1.2rem;\r\n    color:white;\r\n    font-weight: 600;\r\n    margin-top:20px;\r\n    padding:0 40px;;\r\n    border-radius:8px;\r\n    border-color:white;\r\n    cursor:pointer;\r\n}\r\n\r\n.buttonDrawerContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n    align-items: center;\r\n}\r\n.buttonCartDrawer:hover {\r\n    background-color:rgb(235, 96, 54); ;\r\n}\r\n\r\n.containerC {\r\n    text-align: center;\r\n}\r\n\r\n\r\n.cartDrawer {\r\n    transition: left 0.3s ease-in-out;\r\n}\r\n\r\n.cartDrawer:focus-within {\r\n    right: 0;\r\n}\r\n\r\n.cartDrawer:focus {\r\n    outline: 0;\r\n}\r\n\r\ninput[type=number] {\r\n    /*for absolutely positioning spinners*/\r\n    position: relative; \r\n    padding: 5px;\r\n    padding-right: 25px;\r\n}\r\n\r\ninput[type=number]::-webkit-inner-spin-button,\r\ninput[type=number]::-webkit-outer-spin-button {\r\n    opacity: 1;\r\n}\r\n\r\ninput[type=number]::-webkit-outer-spin-button, \r\ninput[type=number]::-webkit-inner-spin-button {\r\n    -webkit-appearance: inner-spin-button !important;\r\n    width: 20px;\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    height: 100%;\r\n}\r\n\r\n/******************************************\r\n/* CartDrawer\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* MAIN\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n\r\n.project {\r\n    text-align: center;\r\n    color:white;\r\n    padding:20px 0;\r\n}\r\n\r\n/******************************************\r\n/* PROJECT\r\n/*******************************************/\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n.cartContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n\r\n.headerCart  {\r\n    display:flex;\r\n    margin:1% 5% 5%;\r\n    justify-content: center;\r\n    align-items:center ;\r\n    font-size:1.2rem;\r\n    height: fit-content;\r\n}\r\n.cartContainer footer {\r\n    margin-top: auto;\r\n}\r\n\r\n.totalCart span {\r\n    display:block;\r\n}\r\n\r\n.emptyCart {\r\n    text-align: center;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.cartItemCartPage {\r\n    display:flex;\r\n    flex-direction: column;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin-bottom: 25px;\r\n}\r\n.xInCart {\r\n    order:-1;\r\n    text-align: end;\r\n    padding-bottom: 10px;\r\n    margin-top:-5px;\r\n    font-size:1rem;\r\n}\r\n.cartImg img{\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.quantityCartPage {\r\n    width:50px;\r\n    display:flex;\r\n    align-items: center;\r\n}\r\n.descP {\r\n    font-weight: 600;\r\n}\r\n\r\n.backCart {\r\n    width:fit-content;\r\n    margin:1% 5% 0;\r\n    font-size: 0.9rem;\r\n    cursor:pointer;\r\n    white-space: nowrap;\r\n}\r\n\r\n.quantityCartPage input[type=number] {\r\n    padding-block:2px;\r\n    text-align: center;\r\n    height:19px;\r\n    margin-left:5px;\r\n}\r\n\r\n.cartPagePriceSpan {\r\n    color:lightgrey;\r\n    font-size:0.9rem\r\n}\r\n.priceCartPage {\r\n    color:#f86837;\r\n    font-size:1.1rem;\r\n}\r\n.detailsCartPage {\r\n    display:flex;\r\n    justify-content: end;\r\n}\r\n.shipping {\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n    margin:0 5%;\r\n}\r\n\r\n.shipping h2:first-child{\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n.personalInfo h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n}\r\n\r\n.personalInfo span {\r\n    display:block;\r\n    text-transform: uppercase;\r\n    margin-top:10px;\r\n    \r\n}\r\n.personalInfo input {\r\n    all:unset;\r\n    width: 95%;\r\n    height: 23px;\r\n    background-color: rgb(240, 243, 247);\r\n    color:black;\r\n    padding-left:10px;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.payment {\r\n    margin:5% 5%;\r\n    border:1px solid white;\r\n    padding:5%;\r\n    border-radius: 10px;\r\n}\r\n\r\n.facturare {\r\n    margin-top:10px;\r\n    \r\n}\r\n.payment h2 {\r\n    text-align: center;\r\n    text-transform: uppercase;\r\n    font-size:1.1rem;\r\n    font-weight:600;\r\n}\r\n\r\n.totalCart {\r\n    margin:5%;\r\n    padding:5%;\r\n    border:1px solid white;\r\n    margin-block:25px;\r\n    font-size:0.9rem;\r\n    border-radius: 10px;\r\n\r\n}\r\n\r\n.totalCart h3 {\r\n    font-size:1.2rem;\r\n    text-align: center;\r\n    padding-bottom: 10px;\r\n}\r\n\r\n.totalCart ul {\r\n    margin-bottom:20px;\r\n}\r\n.totalCart ul li span {\r\n    display:inline;\r\n}\r\n.totalCart > span {\r\n    font-size: 1.1rem;\r\n    text-align: center;\r\n}\r\n.paymentButton {\r\n    display:flex;\r\n    justify-content: center;\r\n    margin-bottom:25px;\r\n}\r\n.checkout {\r\n    background-color:#ee693d;\r\n    outline:0;\r\n    border:0;\r\n    width:160px;\r\n    color:rgba(255, 255, 255, 0.863);\r\n    height:35px;\r\n    border-radius:5px;\r\n    font-size:1.1rem;\r\n    font-weight: 600;\r\n    cursor:pointer;\r\n}\r\n\r\n.checkout:hover {\r\n    background-color:#db5c32;\r\n}\r\n/******************************************\r\n/* CART\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* Single Item\r\n/*******************************************/\r\n\r\n\r\n.singleItemMain {\r\n    margin:2% 10% 5%;\r\n    color: white(0, 0, 0, 0.829);\r\n}\r\n.singleItemContainer {\r\n    display:flex;\r\n    flex-direction: column;\r\n    height: 100vh;\r\n}\r\n.singleItemContainer footer {\r\n    margin-top: auto;\r\n}\r\n.firstSectionProdus img {\r\n    display:block;\r\n    width:100%;\r\n    height:auto;\r\n    object-fit:cover;\r\n    object-position:center;\r\n\r\n}\r\n\r\n.secondSectionProdus h1 {\r\n    text-align: center;\r\n    font-size:1.7rem;\r\n    font-weight: 700;\r\n    margin-bottom: 50px;\r\n}\r\n\r\n.secondSectionProdus input {\r\n    width:22px;\r\n    height:19px;\r\n    text-align: center;\r\n    border-radius:0px;\r\n    outline: 0;\r\n    border: 0;\r\n}\r\n\r\n.secondSectionProdus ul li {\r\n    display:grid;\r\n    grid-template-columns: 1fr 1fr 1fr;\r\n    grid-template-areas:\"left . right\";\r\n    margin-bottom: 10px;\r\n    border-bottom: 2px dotted lightgrey;\r\n    padding-bottom: 9px;\r\n    \r\n}\r\n\r\n.leftProduct {\r\n    grid-area:left;\r\n} \r\n.rightProduct {\r\n    grid-area:right;\r\n    justify-self: center;\r\n}\r\n\r\n.greutate {\r\n    font-size: 0.8rem;\r\n    font-weight: 400;\r\n}\r\n#gravura1,#gravura2 {\r\n    display:flex;\r\n    \r\n    align-items: center;\r\n}\r\n#gravura1 .leftProduct, #gravura2 .leftProduct {\r\n    width:fit-content;\r\n    padding-right:10px;\r\n    white-space: nowrap\r\n}\r\n\r\n#gravura1 .rightProduct, #gravura2 .rightProduct {\r\n    width:50%;\r\n}\r\n\r\n#gravura1 input, #gravura2 input {\r\n    width:80%;\r\n    background-color:inherit;\r\n    border-bottom: 1px solid white;\r\n    color:white;\r\n    text-align: start;\r\n    padding-left: 5px;\r\n}\r\n#custom-select {\r\n    display:flex;\r\n    justify-content: space-between;\r\n}\r\n#custom-select .rightProduct {\r\n    \r\n    justify-self: center;\r\n}\r\n\r\n#custom-select button:first-child {\r\n    margin-right:-2px;\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n\r\n#custom-select button:nth-child(2){\r\n    border-radius: 0;\r\n}\r\n\r\n\r\n.lastSpan {\r\n    display: block;\r\n}\r\n\r\n.lastSectionProdus {\r\n    display:flex;\r\n    justify-content: space-between;\r\n    text-align: center;\r\n    align-items: center;\r\n    margin-bottom:50px;\r\n}\r\n\r\n.lastSectionProdus div {\r\n    display:flex;\r\n    text-align: center;\r\n    align-items: center;\r\n}\r\n\r\n.lastSectionProdus div span {\r\n    color:grey;\r\n}\r\n\r\n.lastSectionProdus h3 {\r\n    color:#FF7700;\r\n    font-size:1.7rem;\r\n    font-weight: 500;\r\n    padding-right: 10px;\r\n}\r\n.secondSectionProdus li > span {\r\n    font-weight: 600;\r\n}\r\n\r\n.cartAdd {\r\n    background-color: #FF7700;\r\n    color: white;\r\n    padding:10px;\r\n    border-radius:5px;\r\n    cursor:pointer;\r\n}\r\n\r\n.support button {\r\n    background: #E6E6E6;\r\n    border: 1px solid black;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n    padding:5px 10px;\r\n    text-align: center;\r\n}\r\n\r\n.support button:focus {\r\n    background: #e5e5e5;\r\n    outline: none;\r\n    -webkit-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n       -moz-box-shadow: inset 0px 0px 5px #c1c1c1;\r\n            box-shadow: inset 0px 0px 5px #c1c1c1;\r\n}\r\n\r\n\r\n.support button:first-child {\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n}\r\n.support button:last-child {\r\n    margin-left:-2px;\r\n    border-top-left-radius: 0;\r\n    border-bottom-left-radius: 0;\r\n}\r\n\r\n\r\n.quantity {\r\n    display:flex;\r\n    justify-content: center;\r\n    \r\n}\r\n\r\n.quantityButtons {\r\n    padding-left:5px;\r\n    margin-top:-1px;\r\n}\r\n.quantityButtons input {\r\n    width:25px;\r\n}\r\n.quantity input[value] {\r\n    font-size:0.5rem;\r\n    text-align: center;\r\n    border-radius: 0;\r\n}\r\n#custom-select button:focus {\r\n    background-color:white\r\n}\r\n#custom-select button:active {\r\n    background-color: #c1c1c1;\r\n}\r\n\r\n#custom-select .rightProduct {\r\n    display: flex;\r\n    justify-content:center;\r\n}\r\n.singleItemDimensionContainer{\r\n    display:flex;\r\n    justify-content: center;\r\n} \r\n.singleItemDimension,\r\n.singleItemDimension * {\r\n    width:85px;\r\n    height:25px;\r\n    position: relative;\r\n    \r\n}\r\n.singleItemDimension {\r\n    position: relative;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    \r\n}\r\n.singleItemDimension select {\r\n    position:relative;\r\n    bottom:2px;\r\n    font-weight: normal;\r\n    max-width: 100%;\r\n    border: none;\r\n    background-color: transparent;\r\n    -webkit-appearance: none;\r\n    -moz-appearance: none;\r\n    appearance: none;\r\n    background-color: #E6E6E6;\r\n    border-radius: 5px;\r\n    padding-left:5px;\r\n    font-size:0.8rem;\r\n}\r\n.singleItemDimension select:active, .singleItemDimension select:focus {\r\n    outline: none;\r\n    box-shadow: none;\r\n}\r\n.singleItemDimension:after {\r\n    content: \"\";\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 8px;\r\n    width: 0;\r\n    height: 0;\r\n    margin-top: -2px;\r\n    border-top: 5px solid #aaa;\r\n    border-right: 5px solid transparent;\r\n    border-left: 5px solid transparent;\r\n}\r\n\r\n.backSingleItem {\r\n    white-space: nowrap;\r\n    width:fit-content;\r\n    margin:1% 5%;\r\n}\r\n/******************************************\r\n/* Single Product\r\n/*******************************************/\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n\r\nfooter {\r\n    background-color: #346751 ;\r\n    height:200px;    \r\n    color:black;\r\n  \r\n}\r\n\r\n.footer {\r\n    height:100%;\r\n    margin:0 10%;\r\n    padding-top:2%;\r\n}\r\n\r\nfooter a, footer span {\r\n    display:inline-block;\r\n}\r\n\r\nfooter h4 {\r\n    font-weight:800;\r\n    font-size:1.6rem;\r\n    text-align: center;\r\n}\r\n.titleFooter{\r\n    text-align: center;\r\n}\r\n.footerOne {\r\n    text-align: center;\r\n    font-weight: 500;\r\n    font-size:1.2rem;\r\n}\r\n\r\n.footerTwo {\r\n    text-align:center;\r\n    font-size:1.4rem;\r\n}\r\n\r\n.footerThree {\r\n    margin-top:3%;\r\n    text-align: center;\r\n    font-size:0.8rem;\r\n}\r\n\r\n.footerTwo :not(:last-child){\r\n    padding-right: 10px;\r\n}\r\n\r\n.footerOne :first-child {\r\n    padding-right:10px;\r\n}\r\n\r\n.footerOne :last-child {\r\n    padding-left:10px;\r\n}\r\n\r\n/******************************************\r\n/* FOOTER\r\n/*******************************************/\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/\r\n\r\n@media only screen and (min-width: 700px) and (max-width: 1200px) {\r\n    body{\r\n        margin:0 6%;\r\n    }\r\n    main {\r\n        margin:0;\r\n    }\r\n    .logo img{\r\n        width:65px;\r\n    }\r\n    .rightSide {\r\n        font-size:1.3rem;\r\n    }\r\n    .menu {\r\n        \r\n        font-size:1.3rem;\r\n        display:flex;\r\n        align-items: center;\r\n    }\r\n    .fa-bars {\r\n        cursor:pointer;\r\n    }\r\n    .mailMenu {\r\n        top:80px;\r\n        font-size:1rem;\r\n        padding:2px 2%;\r\n       \r\n    }\r\n    header {\r\n        height:90vh\r\n    }\r\n    header .firstSection {\r\n        top:12vh;\r\n        max-width:600px;\r\n        width:100%;\r\n    }\r\n    header .secondSection {\r\n        left:15%;\r\n        top:48vh;\r\n        \r\n    }\r\n    header .secondSection h1 {\r\n        font-size:2.8rem;\r\n    }\r\n    .veziProduseleSpan {\r\n        height:45px;\r\n        font-size:1.5rem;\r\n        padding-top:3px;\r\n        width:65%;\r\n    }\r\n    .inter {\r\n        margin-bottom: 20px;\r\n    }\r\n    .headerhomeScreen .lastSection {\r\n        font-size:1.3rem;\r\n    }\r\n    .shop {\r\n        display:grid;\r\n        grid-template-columns: repeat(3, 1fr);\r\n        column-gap:20px;\r\n        row-gap: 20px;\r\n        padding-bottom:20px;\r\n    }\r\n\r\n    .productButtons button {\r\n        height:35px;\r\n        font-size:calc(6px + 6 * ((100vw - 320px) / 450));\r\n        border-radius: 8px;\r\n    }\r\n    \r\n    .project {\r\n        font-size:calc(8px + 6 * ((100vw - 330px) / 300));\r\n    }\r\n    .cartDrawer {\r\n        width:400px;\r\n    }\r\n    .titleCartDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .cart-item {\r\n        font-size:1.2rem;\r\n    }\r\n    .cartDrawerPriceSpan {\r\n        padding-right: 6px;\r\n    }\r\n    .totalDrawer {\r\n        font-size:1.3rem;\r\n    }\r\n    .productDetailsDimension, .singleItemDimension {\r\n        width:120px;\r\n    }\r\n    .productDetailsDimension,.singleItemDimension {\r\n        height:25px;\r\n    \r\n    }\r\n    .item>div {\r\n        font-size: calc(6px + 6 * ((100vw - 320px) / 300))\r\n    }\r\n    .productDetailsDimension select{\r\n        width:90px;\r\n        font-size:1.1rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n    \r\n    }\r\n    .productDetailsDimension select option,.singleItemDimension select option {\r\n        font-size:0.7rem;\r\n    }\r\n    .cartDrawer .quantity {\r\n        width:55px;\r\n        height:28px;\r\n        font-size:1.1rem;\r\n    }\r\n    \r\n    .singleItemMain {\r\n        display:flex;\r\n        justify-content: space-between;\r\n        margin:1% 0 5%;\r\n        \r\n    }\r\n    .singleItemMain .leftProduct {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .singleItemDimension select{\r\n        width:90px;\r\n        font-size:1.2rem;\r\n        padding-left: 13px;\r\n        bottom:0;\r\n        padding-top:4px;\r\n    }\r\n    .buttonCartDrawer {\r\n        height:50px;\r\n        font-size:1.4rem;\r\n    }\r\n    .firstSectionProdus{\r\n        margin-right: 5%;\r\n    }\r\n    .gravuraInputs input {\r\n        font-size:1.2rem;\r\n        padding-bottom: 2px;\r\n    }\r\n    .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n        font-size:1.2rem;\r\n    }\r\n\r\n    .lastSpan{\r\n        font-size:1.3rem;\r\n    }\r\n    .cartItemCartPage{\r\n        display:flex;\r\n        flex-direction: row;\r\n        align-items: center;\r\n    }\r\n\r\n    .cartImg {\r\n        width:50%\r\n    }\r\n    .detailsCartPage {\r\n        width:18%\r\n    }\r\n    .descP {\r\n        padding-bottom:10px;\r\n    }\r\n    .cartDesc {\r\n        padding-left:2%;\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare {\r\n        font-size:calc(16px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n\r\n    \r\n    .headerCart,.emptyCart  {\r\n        font-size:calc(25px + 6 * ((100vw - 500px) / 600));\r\n        font-weight:500;\r\n    }\r\n    .personInfo input {\r\n        height:25px;\r\n    }\r\n    .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n        font-size:calc(18px + 6 * ((100vw - 500px) / 600))\r\n\r\n    }\r\n    .totalCart h3 {\r\n        font-size:calc(22px + 6 * ((100vw - 500px) / 600))\r\n    }\r\n    .xInCart {\r\n        order:1;\r\n        align-self:start;\r\n    }\r\n    .backCart,.backSingleItem {\r\n        white-space: nowrap;\r\n        width:fit-content;\r\n        font-size:1.1rem;\r\n    }\r\n    .checkout{\r\n        width:200px;\r\n        height:45px;\r\n    }\r\n    input[type=checkbox]\r\n    {\r\n      /* Double-sized Checkboxes */\r\n        -ms-transform: scale(1.5); /* IE */\r\n        -moz-transform: scale(1.5); /* FF */\r\n        -webkit-transform: scale(1.5); /* Safari and Chrome */\r\n        -o-transform: scale(1.5); /* Opera */\r\n        transform: scale(1.5);\r\n        padding: 10px;\r\n        margin-right:15px;\r\n    }\r\n    footer {\r\n        height:220px;  \r\n    }\r\n    \r\n    footer h4 {\r\n        font-size:1.8rem;\r\n    }\r\n\r\n    .footerOne {\r\n        font-size:1.3rem;\r\n    }\r\n    \r\n    .footerTwo {\r\n        font-size:1.5rem;\r\n    }\r\n    \r\n    .footerThree {\r\n        font-size:0.8rem;\r\n    }\r\n}\r\n\r\n\r\n@media only screen and (min-width: 1200px) {\r\n        body{\r\n            margin:0 6%;\r\n        }\r\n        main {\r\n            margin:0;\r\n        }\r\n        .logo img{\r\n            width:60px;\r\n        }\r\n        .rightSide {\r\n            font-size:1.2rem;\r\n        }\r\n        .menu {\r\n            font-size:1.2rem;\r\n            display:flex;\r\n            align-items: center;\r\n            display:none;\r\n        }\r\n        .leftSide {\r\n            display:flex;\r\n            font-size:1.2rem;\r\n            align-items: center;\r\n        }\r\n        header {\r\n            height:90vh\r\n        }\r\n        .headerhomeScreen .firstSection {\r\n            top:10%;\r\n        }\r\n        .headerhomeScreen .firstSection img {\r\n            width:400px;\r\n        }\r\n        header .secondSection {\r\n            left:15%;\r\n            top:48vh;\r\n            \r\n        }\r\n        header .secondSection h1 {\r\n            font-size:calc(50px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n\r\n        .headerhomeScreen .secondSection {\r\n            left:15%;\r\n        }\r\n        .veziProduseleSpan {\r\n            height:55px;\r\n            font-size:1.7rem;\r\n            padding-top:3px;\r\n            width:55%;\r\n        }\r\n        .headerhomeScreen .lastSection {\r\n            font-size:1.5rem;\r\n        }\r\n        .inter {\r\n            margin-bottom: 55px;\r\n            font-size: calc(14px + 6 * ((100vw - 320px) / 600));\r\n        }\r\n\r\n        .shop {\r\n            display:grid;\r\n            grid-template-columns: repeat(4, 1fr);\r\n            column-gap:20px;\r\n            row-gap: 20px;\r\n            padding-bottom:20px;\r\n        }\r\n        .item>div {\r\n            border-radius: 10px;\r\n        }\r\n        .details {\r\n            font-size:calc(10px + 6 * ((100vw - 320px) / 900))\r\n        }\r\n\r\n        .cartDrawer {\r\n            width:400px;\r\n        }\r\n        .titleCartDrawer {\r\n            font-size:1.3rem;\r\n        }\r\n        .cart-item {\r\n            font-size:1.2rem;\r\n        }\r\n        .cartDrawerPriceSpan {\r\n            padding-right: 6px;\r\n        }\r\n        .totalDrawer {\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawer .quantity {\r\n            width:55px;\r\n            height:28px;\r\n            font-size:1.2rem;\r\n        }\r\n        .productButtons button {\r\n            height:45px;\r\n            font-size:calc(9px + 6 * ((100vw - 320px) / 900));\r\n            border-radius: 8px;\r\n        }\r\n        .project {\r\n            margin:auto;\r\n            width:50%;\r\n            color:white;\r\n            padding:50px 0;\r\n            font-size:calc(10px + 6 * ((100vw - 350px) / 500));\r\n        }\r\n        .productDetailsDimension, .singleItemDimension {\r\n            width:150px;\r\n            height:30px;\r\n        }\r\n        .productDetailsDimension {\r\n            margin:3% 0;\r\n        }\r\n        .productDetailsDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 15px;\r\n            bottom:0;\r\n        }\r\n        .productDetailsDimension select option {\r\n            font-size:1.2rem;\r\n\r\n        }\r\n        .buttonCartDrawer {\r\n            height:50px;\r\n            font-size:1.4rem;\r\n        }\r\n        .cartDrawerPrice{\r\n            font-size:1.2rem\r\n        }\r\n        .cartDimensiune{\r\n            font-size:1.2rem\r\n        }\r\n        .singleItemMain {\r\n            width:70%;\r\n            display:flex;\r\n            justify-content: space-between;\r\n            margin:5% auto;\r\n        }\r\n        .singleItemMain .leftProduct {\r\n            font-size:1.3rem;\r\n        }\r\n    \r\n        .singleItemDimension select{\r\n            width:150px;\r\n            font-size:1.2rem;\r\n            padding-left: 13px;\r\n            bottom:0;\r\n            padding-top:4px;\r\n        }\r\n        .secondSectionProdus {\r\n            width:60%\r\n        }\r\n        \r\n        .firstSectionProdus{\r\n            margin-right: 5%;\r\n        }\r\n    \r\n        .suport button,.greutate,.gravuraChoice button,.cartAdd {\r\n            font-size:1.2rem;\r\n        }\r\n        .lastSectionProdus h3{\r\n            font-size:1.7rem;\r\n        }\r\n        .lastSpan{\r\n            font-size:1.3rem;\r\n        }\r\n        #custom-select button:nth-child(2){\r\n            border-radius: 0;\r\n        }\r\n\r\n        .backSingleItem{\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.2rem;\r\n            margin-left:20px;\r\n            white-space: nowrap;\r\n        }\r\n        .backCart {\r\n            width:fit-content;\r\n            margin-top:13px;\r\n            font-size:1.2rem;\r\n            margin-left:20px;\r\n        }\r\n        .cartImg {\r\n            width:45%\r\n        }\r\n        .cartItemCartPage{\r\n            display:flex;\r\n            flex-direction: row;\r\n            align-items: center;\r\n        }\r\n        #gravura1 input, #gravura2 input {\r\n            font-size:1.2rem;\r\n        }\r\n        .detailsCartPage {\r\n            width:18%\r\n        }\r\n        .descP {\r\n            padding-bottom:10px;;\r\n        }\r\n        .cartDesc {\r\n            padding-left:2%;\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 600))\r\n        }\r\n        .priceCartPage, .cartPagePriceSpan,.personalInfo span, .facturare,.totalCart li {\r\n            font-size:calc(10px + 6 * ((100vw - 500px) / 800))\r\n        }\r\n    \r\n        \r\n        .headerCart,.emptyCart  {\r\n            font-size:calc(20px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500;\r\n        }\r\n        .personInfo input {\r\n            height:25px;\r\n        }\r\n        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {\r\n            font-size:calc(12px + 6 * ((100vw - 500px) / 800))\r\n    \r\n        }\r\n        .totalCart h3 {\r\n            font-size:calc(16px + 6 * ((100vw - 500px) / 800));\r\n            font-weight:500\r\n        }\r\n        .totalCart {\r\n            margin-top:0;\r\n            width:100%;\r\n        }\r\n        .totalAndButtonCart {\r\n            display:flex;\r\n            flex-direction: column;\r\n            align-items: center;\r\n            margin-left:3%;\r\n        }\r\n        .xInCart {\r\n            order:1;\r\n            align-self:start;\r\n        }\r\n\r\n        .checkout{\r\n            width:280px;\r\n            height:55px;\r\n            white-space: nowrap;\r\n        }\r\n        input[type=checkbox]\r\n            {\r\n              /* Double-sized Checkboxes */\r\n                -ms-transform: scale(1.7); /* IE */\r\n                -moz-transform: scale(1.7); /* FF */\r\n                -webkit-transform: scale(1.7); /* Safari and Chrome */\r\n                -o-transform: scale(1.7); /* Opera */\r\n                transform: scale(1.7);\r\n                padding: 10px;\r\n                margin-right:15px;\r\n                \r\n            }\r\n        .facturare {\r\n            display:flex;\r\n        }\r\n        \r\n        .payment,.shipping {\r\n            margin:5% 0;\r\n        }\r\n        .quantityCartPage input[type=number] {\r\n            font-size: 1rem;\r\n            height:25px;\r\n        }\r\n        .quantityCartPage {\r\n            display:flex;\r\n            align-items: center;\r\n        }\r\n        footer {\r\n            height:250px;    \r\n        }\r\n        .cartWithoutHeader {\r\n            display:flex;\r\n            justify-content: center;\r\n        }\r\n        .cartWithoutHeaderAndPayment {\r\n            width:60%;\r\n        }\r\n        footer h4 {\r\n            font-weight:800;\r\n            font-size:2.2rem;\r\n        }\r\n        \r\n        .footerOne {\r\n            font-weight: 500;\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerTwo {\r\n\r\n            font-size:1.7rem;\r\n        }\r\n        \r\n        .footerThree {\r\n            margin-top:3%;\r\n            font-size:1rem;\r\n        }\r\n        \r\n    }\r\n    \r\n    \r\n\r\n/******************************************\r\n/* MEDIA Q\r\n/*******************************************/"],"sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1996,6 +4491,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, "/* Box Model Hack */\r\n:root{  \r\n  
   \*************************************************************/
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -2022,6 +4518,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, "/* http://meyerweb.com/eric/tools/css/
   \*****************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 /*
@@ -2133,6 +4630,7 @@ module.exports = function (cssWithMappingToString) {
   \************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 module.exports = function (item) {
@@ -2164,6 +4662,7 @@ module.exports = function (item) {
   \***************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Action": () => (/* binding */ Action),
@@ -2979,6 +5478,7 @@ function parsePath(path) {
   \**********************************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 var reactIs = __webpack_require__(/*! react-is */ "./node_modules/hoist-non-react-statics/node_modules/react-is/index.js");
@@ -3092,6 +5592,7 @@ module.exports = hoistNonReactStatics;
   \************************************************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 /** @license React v16.13.1
  * react-is.development.js
  *
@@ -3283,6 +5784,7 @@ exports.typeOf = typeOf;
   \*****************************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -3298,6 +5800,7 @@ if (false) {} else {
   \*************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 /**
  * @license React
  * react-dom.development.js
@@ -33171,6 +35674,7 @@ if (
   \******************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 
 var m = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
@@ -33203,6 +35707,7 @@ if (false) {} else {
   \*****************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 function checkDCE() {
@@ -33246,6 +35751,7 @@ if (false) {} else {
   \***********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "ReactReduxContext": () => (/* binding */ ReactReduxContext),
@@ -33270,6 +35776,7 @@ if (true) {
   \************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -33332,6 +35839,7 @@ function Provider({
   \***********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
@@ -33773,6 +36281,7 @@ function connect(mapStateToProps, mapDispatchToProps, mergeProps, {
   \******************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createInvalidArgFactory": () => (/* binding */ createInvalidArgFactory)
@@ -33791,6 +36300,7 @@ function createInvalidArgFactory(arg, name) {
   \*******************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "mapDispatchToPropsFactory": () => (/* binding */ mapDispatchToPropsFactory)
@@ -33817,6 +36327,7 @@ function mapDispatchToPropsFactory(mapDispatchToProps) {
   \****************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "mapStateToPropsFactory": () => (/* binding */ mapStateToPropsFactory)
@@ -33838,6 +36349,7 @@ function mapStateToPropsFactory(mapStateToProps) {
   \***********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "defaultMergeProps": () => (/* binding */ defaultMergeProps),
@@ -33888,6 +36400,7 @@ function mergePropsFactory(mergeProps) {
   \****************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ finalPropsSelectorFactory),
@@ -33988,6 +36501,7 @@ function finalPropsSelectorFactory(dispatch, _ref) {
   \*******************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ verifySubselectors)
@@ -34019,6 +36533,7 @@ function verifySubselectors(mapStateToProps, mapDispatchToProps, mergeProps) {
   \***************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "getDependsOnOwnProps": () => (/* binding */ getDependsOnOwnProps),
@@ -34105,6 +36620,7 @@ function wrapMapToPropsFunc(mapToProps, methodName) {
   \************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Provider": () => (/* reexport safe */ _components_Provider__WEBPACK_IMPORTED_MODULE_0__["default"]),
@@ -34144,6 +36660,7 @@ __webpack_require__.r(__webpack_exports__);
   \**********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createDispatchHook": () => (/* binding */ createDispatchHook),
@@ -34201,6 +36718,7 @@ const useDispatch = /*#__PURE__*/createDispatchHook();
   \**************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "useReduxContext": () => (/* binding */ useReduxContext)
@@ -34245,6 +36763,7 @@ function useReduxContext() {
   \**********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createSelectorHook": () => (/* binding */ createSelectorHook),
@@ -34335,6 +36854,7 @@ const useSelector = /*#__PURE__*/createSelectorHook();
   \*******************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createStoreHook": () => (/* binding */ createStoreHook),
@@ -34391,6 +36911,7 @@ const useStore = /*#__PURE__*/createStoreHook();
   \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Provider": () => (/* reexport safe */ _exports__WEBPACK_IMPORTED_MODULE_6__.Provider),
@@ -34437,6 +36958,7 @@ __webpack_require__.r(__webpack_exports__);
   \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 
 
@@ -34448,6 +36970,7 @@ __webpack_require__.r(__webpack_exports__);
   \***********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "createSubscription": () => (/* binding */ createSubscription)
@@ -34589,6 +37112,7 @@ function createSubscription(store, parentSub) {
   \****************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "getBatch": () => (/* binding */ getBatch),
@@ -34613,6 +37137,7 @@ const getBatch = () => batch;
   \*****************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ bindActionCreators)
@@ -34639,6 +37164,7 @@ function bindActionCreators(actionCreators, dispatch) {
   \************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ isPlainObject)
@@ -34668,6 +37194,7 @@ function isPlainObject(obj) {
   \******************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "unstable_batchedUpdates": () => (/* reexport safe */ react_dom__WEBPACK_IMPORTED_MODULE_0__.unstable_batchedUpdates)
@@ -34683,6 +37210,7 @@ __webpack_require__.r(__webpack_exports__);
   \***********************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ shallowEqual)
@@ -34723,6 +37251,7 @@ function shallowEqual(objA, objB) {
   \************************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "canUseDOM": () => (/* binding */ canUseDOM),
@@ -34751,6 +37280,7 @@ const useIsomorphicLayoutEffect = canUseDOM ? react__WEBPACK_IMPORTED_MODULE_0__
   \*******************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "notInitialized": () => (/* binding */ notInitialized)
@@ -34767,6 +37297,7 @@ const notInitialized = () => {
   \****************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ verifyPlainObject)
@@ -34789,6 +37320,7 @@ function verifyPlainObject(value, displayName, methodName) {
   \******************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ warning)
@@ -34826,6 +37358,7 @@ function warning(message) {
   \************************************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 /**
  * @license React
  * react-is.development.js
@@ -35057,6 +37590,7 @@ exports.typeOf = typeOf;
   \*****************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -35072,6 +37606,7 @@ if (false) {} else {
   \************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "BrowserRouter": () => (/* binding */ BrowserRouter),
@@ -35496,6 +38031,7 @@ function createSearchParams(init) {
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "MemoryRouter": () => (/* binding */ MemoryRouter),
@@ -36482,6 +39018,7 @@ function renderMatches(matches) {
   \*****************************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
+"use strict";
 /* module decorator */ module = __webpack_require__.nmd(module);
 /**
  * @license React
@@ -39232,6 +41769,7 @@ if (
   \*************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -39247,6 +41785,7 @@ if (false) {} else {
   \********************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 
 var compose = (__webpack_require__(/*! redux */ "./node_modules/redux/es/redux.js").compose);
@@ -39279,6 +41818,7 @@ exports.devToolsEnhancer =
   \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "__DO_NOT_USE__ActionTypes": () => (/* binding */ ActionTypes),
@@ -40016,6 +42556,7 @@ if ( true && typeof isCrushed.name === 'string' && isCrushed.name !== 'isCrushed
   \*************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 /**
  * @license React
  * scheduler.development.js
@@ -40660,6 +43201,7 @@ if (
   \*****************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -40675,6 +43217,7 @@ if (false) {} else {
   \************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -40729,6 +43272,7 @@ var update = _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMP
   \*********************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -40783,6 +43327,7 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
   \***********************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -40837,6 +43382,7 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
   \****************************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 var stylesInDOM = [];
@@ -40950,6 +43496,7 @@ module.exports = function (list, options) {
   \********************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 var memo = {};
@@ -40998,6 +43545,7 @@ module.exports = insertBySelector;
   \**********************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -41018,6 +43566,7 @@ module.exports = insertStyleElement;
   \**********************************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -41039,6 +43588,7 @@ module.exports = setAttributesWithoutAttributes;
   \***************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -41118,6 +43668,7 @@ module.exports = domAPI;
   \*********************************************************************/
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -41143,6 +43694,7 @@ module.exports = styleTagTransform;
   \**********************************************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 /**
  * @license React
  * use-sync-external-store-shim.development.js
@@ -41392,6 +43944,7 @@ if (
   \************************************************************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 /**
  * @license React
  * use-sync-external-store-shim/with-selector.development.js
@@ -41567,6 +44120,7 @@ if (
   \************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -41582,6 +44136,7 @@ if (false) {} else {
   \********************************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 
 
 if (false) {} else {
@@ -41597,6 +44152,7 @@ if (false) {} else {
   \***********************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 module.exports = __webpack_require__.p + "logoAlb.svg";
 
 /***/ }),
@@ -41607,6 +44163,7 @@ module.exports = __webpack_require__.p + "logoAlb.svg";
   \***********************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+"use strict";
 module.exports = __webpack_require__.p + "HeaderPic2.png";
 
 /***/ }),
@@ -41617,6 +44174,7 @@ module.exports = __webpack_require__.p + "HeaderPic2.png";
   \*******************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _defineProperty)
@@ -41644,6 +44202,7 @@ function _defineProperty(obj, key, value) {
   \************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _extends)
@@ -41673,6 +44232,7 @@ function _extends() {
   \******************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _objectSpread2)
@@ -41714,6 +44274,7 @@ function _objectSpread2(target) {
   \*********************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _objectWithoutPropertiesLoose)
@@ -41741,6 +44302,7 @@ function _objectWithoutPropertiesLoose(source, excluded) {
   \*****************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Bounce": () => (/* binding */ B),
@@ -41854,8 +44416,9 @@ function u(e){return"number"==typeof e&&!isNaN(e)}function d(e){return"boolean"=
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
+"use strict";
 /*!**********************!*\
   !*** ./src/index.js ***!
   \**********************/
