@@ -11,7 +11,7 @@ import ShippingForm from "../components/cartComponents/ShippingForm"
 
 const Cart = ({ cart }) => {
     useEffect(()=>{window.scrollTo(0, 0)},[]);
-
+    const [error, setError] = useState(false);
     const [skipCount, setSkipCount] = useState(true);
     const [totalPrice, setTotalPrice] = useState(0)
     const [totalItems, setTotalItems] = useState(0)
@@ -44,15 +44,17 @@ const Cart = ({ cart }) => {
     useEffect(() => {
         if (skipCount) setSkipCount(false);
         if(!skipCount){
-            if (!formData.shipping.validated) {console.log('nop')}
+            if (!formData.shipping.validated) {setError(true)}
             if (formData.shipping.validated && !isChecked) {
                 {if(formData.payment.validated)
-                    {console.log({formData})}
+                    {setError(false)
+                        console.log({formData})}
                 else{
-                    console.log('nop2')
+                    setError(true)
                 }
             }}
             else if (formData.shipping.validated && isChecked) {
+                setError(false)
                 console.log({formData})
             }
         
@@ -77,6 +79,8 @@ const Cart = ({ cart }) => {
     function handleChangepayment(data) {
         setFormData({ ...formData, payment: data });
     }
+
+
     return (
         
             <div className="cartContainer">
@@ -117,6 +121,7 @@ const Cart = ({ cart }) => {
                 <div className="paymentButton">
                     <button onClick={handleSubmit} className="checkout">Plata cu cardul</button>
                 </div>
+                {error && <div id="error">Mai incearca o data bosule</div>}
                 </div>}
             </div>
             <Footer />
