@@ -404,7 +404,7 @@ nav .container ul {
 }
 .productButtons button {
     height:calc(25px + 6 * ((100vw - 320px) / 200));
-    font-size:calc(6px + 6 * ((100vw - 310px) / 200));
+    font-size:calc(6px + 6 * ((100vw - 310px) / 250));
     font-weight: 600;
     color:white;
     border-radius: 7px;
@@ -1241,11 +1241,10 @@ footer h4 {
 /******************************************
 /* MEDIA Q
 /*******************************************/
-@media only screen and (max-width: 375px) {
+@media only screen and (max-width: 400px) {
     .productButtons {
         flex-direction: column;
         width:100%;
-        
     }
     
     #addToCart{
@@ -1326,7 +1325,7 @@ footer h4 {
 
     .productButtons button {
         height:35px;
-        font-size:calc(6px + 6 * ((100vw - 320px) / 450));
+        font-size:calc(5px + 6 * ((100vw - 320px) / 450));
         border-radius: 8px;
     }
     

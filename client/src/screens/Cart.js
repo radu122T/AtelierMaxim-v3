@@ -5,7 +5,7 @@ import { connect } from "react-redux"
 import Nav from "../components/Nav"
 import { Link } from "react-router-dom"
 import PaymentForm from "../components/cartComponents/PaymentForm"
-import ShippingForm from "../components/cartComponents/shippingForm"
+import ShippingForm from "../components/cartComponents/ShippingForm"
 
 
 
@@ -36,12 +36,11 @@ const Cart = ({ cart }) => {
     
 
     const handleOnChange = () => {
-        setIsChecked(!isChecked);
+        setIsChecked(!isChecked)
     }
     
-    const shippingref = useRef();
-    const paymentref = useRef();
-    
+    const shippingref = useRef()
+    const paymentref = useRef()
     useEffect(() => {
         if (skipCount) setSkipCount(false);
         if(!skipCount){
@@ -59,12 +58,14 @@ const Cart = ({ cart }) => {
         
             setClicked(false)
         }
-       
+
     }, [clicked]);
     
     async function handleSubmit() {
+        
         await shippingref.current.Submit();
-        await paymentref.current.Submit();
+        if (paymentref.current) {await paymentref.current.Submit();}
+        
         setClicked(true)
         
     }

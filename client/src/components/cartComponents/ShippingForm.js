@@ -3,6 +3,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 
 const ShippingForm = ({ onChange, refId }) => {
+
   const formik = useFormik({
     initialValues: {
         nume: "",
@@ -32,10 +33,6 @@ const ShippingForm = ({ onChange, refId }) => {
       watchForm();
     }
   })
-
-  // React.useEffect(() => {
-  //   watchForm();
-  // }, [formik.values, formik.errors]);
 
   React.useImperativeHandle(refId, () => ({
     Submit: async () => {

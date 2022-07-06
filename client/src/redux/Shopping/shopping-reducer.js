@@ -47,7 +47,7 @@ const shopReducer = (state = INITIAL_STATE, action) => {
             currentItem: action.payload,
         };
     case actionTypes.ADD_DIMENSION_ITEM:
-        console.log(action.payload.dimension)
+        
     return {
         ...state,
         cart: state.cart.map((item) =>

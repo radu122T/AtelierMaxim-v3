@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useImperativeHandle} from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
@@ -25,7 +25,7 @@ const PaymentForm = ({ onChange, refId }) => {
     }
     });
 
-    React.useImperativeHandle(refId, () => ({
+    useImperativeHandle(refId, () => ({
         Submit: async () => {
             await formik.submitForm();
     }
