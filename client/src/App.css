@@ -436,20 +436,20 @@ nav .container ul {
 .productDetailsDimension,
 .productDetailsDimension * {
     display:flex;
-    width:75px;
+    width:calc(80px + 6 * ((100vw - 350px) / 650));
     position: relative;
 
 }
 .productDetailsDimension {
     background-color: #E6E6E6;
-    height:19px;
+    height:calc(20px + 6 * ((100vw - 350px) / 550));
     border-radius: 5px;
     margin:5% 0;
 }
 .productDetailsDimension select {
     position:relative;
     bottom:1px;
-    font-size: 0.6rem;
+    font-size:calc(8px + 6 * ((100vw - 320px) / 450));
     font-weight: normal;
     max-width: 100%;
     border: none;
@@ -1347,26 +1347,28 @@ footer h4 {
     .totalDrawer {
         font-size:1.3rem;
     }
+
     .productDetailsDimension, .singleItemDimension {
-        width:120px;
-    }
-    .productDetailsDimension, .singleItemDimension {
-        height:25px;
+        height:calc(14px + 6 * ((100vw - 320px) / 450));
+        width:calc(95px + 6 * ((100vw - 350px) / 550));
     
     }
-    .item>div,.productDetailsDimension select,.productDetailsDimension select option,.singleItemDimension select option,.singleItemDimension select, .suport button,.greutate,.gravuraChoice button,.cartAdd {
-        font-size: calc(6px + 6 * ((100vw - 320px) / 400))
+    .item>div,.productDetailsDimension select option,.singleItemDimension select option,.singleItemDimension select, .suport button,.greutate,.gravuraChoice button,.cartAdd {
+        font-size: calc(6px + 6 * ((100vw - 320px) / 450))
     }
 
     .singleItemMain .leftProduct{
         font-size: calc(8px + 6 * ((100vw - 320px) / 400))
     }
     .productDetailsDimension select{
-        
         width:90px;
         padding-left: 13px;
         bottom:0;
+        font-size: calc(6px + 6 * ((100vw - 350px) / 450))
     
+    }
+    .productDetailsDimension option {
+        width:110px;
     }
     .cartDrawer .quantity {
         width:55px;
@@ -1596,14 +1598,14 @@ footer h4 {
             font-size:calc(10px + 6 * ((100vw - 350px) / 500));
         }
         .productDetailsDimension, .singleItemDimension {
-            width:150px;
-            height:30px;
+            width:130px;
+            height:28px;
         }
         .productDetailsDimension {
             margin:3% 0;
         }
         .productDetailsDimension select{
-            width:150px;
+            width:130px;
             padding-left: 15px;
             bottom:0;
         }
@@ -1688,8 +1690,8 @@ footer h4 {
             padding-left:2%;
             font-size:calc(10px + 6 * ((100vw - 500px) / 600))
         }
-        .priceCartPage, .cartPagePriceSpan,.personalInfo label, .facturare,.totalCart li, .productDetailsDimension select, .productDetailsDimension select option {
-            font-size:calc(10px + 6 * ((100vw - 500px) / 800))
+        .cartPagePriceSpan,.personalInfo label, .facturare,.totalCart li, .productDetailsDimension select, .productDetailsDimension select option {
+            font-size:calc(9px + 6 * ((100vw - 500px) / 800))
         }
     
         
@@ -1700,7 +1702,7 @@ footer h4 {
         .personInfo input {
             height:25px;
         }
-        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span  {
+        .payment h2,.shipping h2:first-child,.xInCart,.totalCart,.checkout,.totalCart > span, .priceCartPage  {
             font-size:calc(12px + 6 * ((100vw - 500px) / 800))
     
         }
@@ -1750,8 +1752,8 @@ footer h4 {
             margin:5% 0;
         }
         .quantityCartPage input[type=number] {
-            font-size: 1rem;
-            height:25px;
+            font-size: 0.95rem;
+            height:22px;
         }
         .quantityCartPage {
             display:flex;
