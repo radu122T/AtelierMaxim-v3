@@ -121,7 +121,7 @@ const Cart = ({ cart }) => {
                 <div className="paymentButton">
                     <button onClick={handleSubmit} className="checkout">Plata cu cardul</button>
                 </div>
-                {error && <div id="error">*Campurile pentru livrare trebuie completate complet</div>}
+                {error && <div id="error">*Campurile pentru livrare nu sunt completate.</div>}
                 </div>}
             </div>
             <Footer />
